@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { OUTBREAK_ALERTS } from "@/lib/mockData";
+import type { OutbreakAlert } from "@/types/health";
 import { RiskBadge } from "@/components/ui/Badge";
 import { formatNumber, timeAgo } from "@/lib/utils";
 
-// Newest five alerts (the dataset is ordered most-recent first).
-const recent = OUTBREAK_ALERTS.slice(0, 5);
-
-export function RecentAlerts() {
+export function RecentAlerts({ alerts }: { alerts: OutbreakAlert[] }) {
+  // Newest five alerts (the dataset is ordered most-recent first).
+  const recent = alerts.slice(0, 5);
   return (
     <ul className="divide-y divide-slate-100">
       {recent.map((alert) => (

@@ -3,9 +3,8 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircle2, Download } from "lucide-react";
-import { EPI_REPORT } from "@/lib/mockData";
 
-export function DownloadReportButton() {
+export function DownloadReportButton({ epiWeek }: { epiWeek: string }) {
   const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
@@ -42,7 +41,7 @@ export function DownloadReportButton() {
             Report generated
           </p>
           <p className="text-xs text-slate-500">
-            HealthWatch NG · Weekly Bulletin {EPI_REPORT.epiWeek} (PDF)
+            HealthWatch NG · Weekly Bulletin {epiWeek} (PDF)
           </p>
         </div>
       </div>

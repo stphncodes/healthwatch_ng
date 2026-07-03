@@ -2,9 +2,11 @@
 "use client";
 
 import { Building2, Database, Globe, type LucideIcon } from "lucide-react";
-import { DATA_SOURCES } from "@/lib/mockData";
+import type { DataSource } from "@/types/health";
 import { SOURCE_STATUS_STYLES } from "@/lib/theme";
 import { SourceStatusBadge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { formatNumber, timeAgo } from "@/lib/utils";
 
 const SOURCE_ICONS: Record<string, LucideIcon> = {
@@ -13,10 +15,22 @@ const SOURCE_ICONS: Record<string, LucideIcon> = {
   "DS-DHIS2": Building2,
 };
 
-export function DataSourcesTab() {
+export function DataSourcesTab({ sources }: { sources: DataSource[] }) {
+  if (sources.length === 0) {
+    return (
+      <Card>
+        <EmptyState
+          icon={Database}
+          title="No data sources registered"
+          hint="Register upstream feeds (e.g. NCDC IDSR, DHIS2) in the data_sources table to monitor their health here."
+        />
+      </Card>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-      {DATA_SOURCES.map((source) => {
+      {sources.map((source) => {
         const Icon = SOURCE_ICONS[source.id] ?? Database;
         const dot = SOURCE_STATUS_STYLES[source.status].solid;
         return (

@@ -3,6 +3,11 @@
 
 import { useState } from "react";
 import { Database, ScrollText, Users, type LucideIcon } from "lucide-react";
+import type {
+  AuditEntry,
+  DataSource,
+  PlatformUser,
+} from "@/types/health";
 import { Card } from "@/components/ui/Card";
 import { UsersTab } from "./UsersTab";
 import { DataSourcesTab } from "./DataSourcesTab";
@@ -16,7 +21,13 @@ const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
   { id: "audit", label: "Audit Log", icon: ScrollText },
 ];
 
-export function AdminTabs() {
+interface AdminTabsProps {
+  users: PlatformUser[];
+  sources: DataSource[];
+  auditLog: AuditEntry[];
+}
+
+export function AdminTabs({ users, sources, auditLog }: AdminTabsProps) {
   const [active, setActive] = useState<TabId>("users");
 
   return (
@@ -46,13 +57,13 @@ export function AdminTabs() {
 
       {active === "users" && (
         <Card>
-          <UsersTab />
+          <UsersTab users={users} />
         </Card>
       )}
-      {active === "sources" && <DataSourcesTab />}
+      {active === "sources" && <DataSourcesTab sources={sources} />}
       {active === "audit" && (
         <Card>
-          <AuditLogTab />
+          <AuditLogTab entries={auditLog} />
         </Card>
       )}
     </div>

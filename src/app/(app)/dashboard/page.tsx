@@ -1,12 +1,28 @@
 // Module: Disease Surveillance Dashboard | Owner: ML Engineer / Data Scientist
 import type { Metadata } from "next";
-import { Activity, Clock, MapPin, Siren, type LucideIcon } from "lucide-react";
+import {
+  Activity,
+  BellOff,
+  Clock,
+  LineChart,
+  Map,
+  MapPin,
+  Siren,
+  type LucideIcon,
+} from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { StatCard } from "@/components/ui/StatCard";
 import { CaseTrendChart } from "@/components/dashboard/CaseTrendChart";
 import { StateRiskGrid } from "@/components/dashboard/StateRiskGrid";
 import { RecentAlerts } from "@/components/dashboard/RecentAlerts";
-import { SUMMARY_STATS } from "@/lib/mockData";
+import {
+  getOutbreakAlerts,
+  getStateRisks,
+  getWeeklyCaseTrends,
+} from "@/lib/data";
+import { formatNumber } from "@/lib/utils";
+import type { SummaryStat } from "@/types/health";
 
 export const metadata: Metadata = { title: "Surveillance Dashboard" };
 
@@ -17,12 +33,67 @@ const STAT_ICONS: Record<string, LucideIcon> = {
   "detection-time": Clock,
 };
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const [stateRisks, alerts, trends] = await Promise.all([
+    getStateRisks(),
+    getOutbreakAlerts(),
+    getWeeklyCaseTrends(),
+  ]);
+
+  // Headline figures are derived from the live datasets.
+  const activeCases = stateRisks.reduce((sum, s) => sum + s.activeCases, 0);
+  const activeOutbreaks = alerts.filter(
+    (a) => a.status === "Active" || a.status === "Investigating",
+  ).length;
+  const statesAffected = new Set(alerts.map((a) => a.state)).size;
+  const meanDetection =
+    alerts.length > 0
+      ? Math.round(
+          alerts.reduce((sum, a) => sum + a.detectionTimeHrs, 0) /
+            alerts.length,
+        )
+      : 0;
+
+  const stats: SummaryStat[] = [
+    {
+      id: "active-cases",
+      label: "Active cases",
+      value: formatNumber(activeCases),
+      delta: "",
+      trend: "flat",
+      helpText: "Across all reporting states",
+    },
+    {
+      id: "active-outbreaks",
+      label: "Active outbreaks",
+      value: String(activeOutbreaks),
+      delta: "",
+      trend: "flat",
+      helpText: "Alerts under active response",
+    },
+    {
+      id: "states-affected",
+      label: "States affected",
+      value: String(statesAffected),
+      delta: "",
+      trend: "flat",
+      helpText: "States with open alerts",
+    },
+    {
+      id: "detection-time",
+      label: "Mean detection time",
+      value: alerts.length > 0 ? `${meanDetection} hrs` : "—",
+      delta: "",
+      trend: "flat",
+      helpText: "Signal to confirmed detection",
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Summary stat cards */}
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {SUMMARY_STATS.map((stat) => (
+        {stats.map((stat) => (
           <StatCard
             key={stat.id}
             stat={stat}
@@ -38,9 +109,17 @@ export default function DashboardPage() {
             title="Weekly Case Trends"
             subtitle="Confirmed + suspected cases, last 12 epi weeks"
           />
-          <div className="p-5">
-            <CaseTrendChart />
-          </div>
+          {trends.length > 0 ? (
+            <div className="p-5">
+              <CaseTrendChart data={trends} />
+            </div>
+          ) : (
+            <EmptyState
+              icon={LineChart}
+              title="No trend data yet"
+              hint="Weekly case counts will chart here once the weekly_case_trends table has rows."
+            />
+          )}
         </Card>
 
         <Card>
@@ -48,7 +127,15 @@ export default function DashboardPage() {
             title="Recent Alerts"
             subtitle="Latest outbreak signals"
           />
-          <RecentAlerts />
+          {alerts.length > 0 ? (
+            <RecentAlerts alerts={alerts} />
+          ) : (
+            <EmptyState
+              icon={BellOff}
+              title="No alerts yet"
+              hint="Outbreak alerts raised by the detection pipeline will appear here."
+            />
+          )}
         </Card>
       </section>
 
@@ -59,9 +146,17 @@ export default function DashboardPage() {
             title="Nigeria State Risk Grid"
             subtitle="All 36 states + FCT, coloured by current risk level"
           />
-          <div className="p-5">
-            <StateRiskGrid />
-          </div>
+          {stateRisks.length > 0 ? (
+            <div className="p-5">
+              <StateRiskGrid states={stateRisks} />
+            </div>
+          ) : (
+            <EmptyState
+              icon={Map}
+              title="No state risk data"
+              hint="Populate the state_risks table to light up the national risk grid."
+            />
+          )}
         </Card>
       </section>
     </div>

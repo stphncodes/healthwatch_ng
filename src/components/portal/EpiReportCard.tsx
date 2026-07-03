@@ -9,7 +9,7 @@ import {
   MapPin,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { EPI_REPORT } from "@/lib/mockData";
+import type { EpiReportSummary } from "@/types/health";
 import { formatNumber } from "@/lib/utils";
 
 interface Figure {
@@ -19,49 +19,51 @@ interface Figure {
   accent: string;
 }
 
-const FIGURES: Figure[] = [
-  {
-    icon: Activity,
-    label: "Total cases reported",
-    value: formatNumber(EPI_REPORT.totalCasesReported),
-    accent: "#006B3F",
-  },
-  {
-    icon: Siren,
-    label: "New outbreaks",
-    value: String(EPI_REPORT.newOutbreaks),
-    accent: "#DC2626",
-  },
-  {
-    icon: Microscope,
-    label: "Under investigation",
-    value: String(EPI_REPORT.underInvestigation),
-    accent: "#D97706",
-  },
-  {
-    icon: MapPin,
-    label: "States reporting",
-    value: `${EPI_REPORT.statesReporting} / 37`,
-    accent: "#2563EB",
-  },
-  {
-    icon: HeartPulse,
-    label: "Recovery rate",
-    value: `${EPI_REPORT.recoveryRate}%`,
-    accent: "#059669",
-  },
-  {
-    icon: TriangleAlert,
-    label: "Case fatality rate",
-    value: `${EPI_REPORT.caseFatalityRate}%`,
-    accent: "#7C3AED",
-  },
-];
+function buildFigures(report: EpiReportSummary): Figure[] {
+  return [
+    {
+      icon: Activity,
+      label: "Total cases reported",
+      value: formatNumber(report.totalCasesReported),
+      accent: "#006B3F",
+    },
+    {
+      icon: Siren,
+      label: "New outbreaks",
+      value: String(report.newOutbreaks),
+      accent: "#DC2626",
+    },
+    {
+      icon: Microscope,
+      label: "Under investigation",
+      value: String(report.underInvestigation),
+      accent: "#D97706",
+    },
+    {
+      icon: MapPin,
+      label: "States reporting",
+      value: `${report.statesReporting} / 37`,
+      accent: "#2563EB",
+    },
+    {
+      icon: HeartPulse,
+      label: "Recovery rate",
+      value: `${report.recoveryRate}%`,
+      accent: "#059669",
+    },
+    {
+      icon: TriangleAlert,
+      label: "Case fatality rate",
+      value: `${report.caseFatalityRate}%`,
+      accent: "#7C3AED",
+    },
+  ];
+}
 
-export function EpiReportCard() {
+export function EpiReportCard({ report }: { report: EpiReportSummary }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      {FIGURES.map((f) => {
+      {buildFigures(report).map((f) => {
         const Icon = f.icon;
         return (
           <div

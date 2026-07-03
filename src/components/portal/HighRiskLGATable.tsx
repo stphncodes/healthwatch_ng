@@ -1,10 +1,10 @@
 // Module: Public Health Officer Portal — High-Risk LGAs | Owner: ML Engineer / Data Scientist
 
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
-import { HIGH_RISK_LGAS } from "@/lib/mockData";
+import type { HighRiskLGA } from "@/types/health";
 import { formatNumber } from "@/lib/utils";
 
-export function HighRiskLGATable() {
+export function HighRiskLGATable({ lgas }: { lgas: HighRiskLGA[] }) {
   return (
     <div className="overflow-x-auto scrollbar-thin">
       <table className="w-full min-w-[560px] text-left text-sm">
@@ -19,7 +19,7 @@ export function HighRiskLGATable() {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {HIGH_RISK_LGAS.map((lga, i) => {
+          {lgas.map((lga, i) => {
             const up = lga.trend === "up";
             const Arrow = up ? ArrowUpRight : ArrowDownRight;
             const color = up ? "#B91C1C" : "#047857";

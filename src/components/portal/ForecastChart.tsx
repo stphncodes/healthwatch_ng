@@ -14,23 +14,23 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { CHOLERA_FORECAST } from "@/lib/mockData";
+import type { ForecastPoint } from "@/types/health";
 import { BRAND } from "@/lib/theme";
 
-// Recharts renders a band when a datum's value is a [min, max] tuple.
-const DATA = CHOLERA_FORECAST.map((p) => ({
-  week: p.week,
-  actual: p.actual,
-  predicted: p.predicted,
-  band: [p.lower, p.upper] as [number, number],
-}));
+export function ForecastChart({ points }: { points: ForecastPoint[] }) {
+  // Recharts renders a band when a datum's value is a [min, max] tuple.
+  const data = points.map((p) => ({
+    week: p.week,
+    actual: p.actual,
+    predicted: p.predicted,
+    band: [p.lower, p.upper] as [number, number],
+  }));
 
-export function ForecastChart() {
   return (
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
-          data={DATA}
+          data={data}
           margin={{ top: 8, right: 12, left: -8, bottom: 0 }}
         >
           <defs>

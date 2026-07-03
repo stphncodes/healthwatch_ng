@@ -1,8 +1,9 @@
 // Module: Admin Panel — Audit Log Tab | Owner: System Admin / Compliance
 "use client";
 
+import { ScrollText } from "lucide-react";
 import type { AuditEntry } from "@/types/health";
-import { AUDIT_LOG } from "@/lib/mockData";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { formatDateTime } from "@/lib/utils";
 
 const CATEGORY_STYLES: Record<AuditEntry["category"], { bg: string; fg: string }> =
@@ -14,7 +15,17 @@ const CATEGORY_STYLES: Record<AuditEntry["category"], { bg: string; fg: string }
     Alert: { bg: "#FEF2F2", fg: "#B91C1C" },
   };
 
-export function AuditLogTab() {
+export function AuditLogTab({ entries }: { entries: AuditEntry[] }) {
+  if (entries.length === 0) {
+    return (
+      <EmptyState
+        icon={ScrollText}
+        title="No audit events recorded"
+        hint="System events (auth, data, config, export, alert) will be logged here for compliance."
+      />
+    );
+  }
+
   return (
     <div className="max-h-[28rem] overflow-y-auto scrollbar-thin">
       <table className="w-full min-w-[760px] text-left text-sm">
@@ -28,7 +39,7 @@ export function AuditLogTab() {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {AUDIT_LOG.map((entry) => {
+          {entries.map((entry) => {
             const c = CATEGORY_STYLES[entry.category];
             return (
               <tr key={entry.id} className="hover:bg-slate-50">
