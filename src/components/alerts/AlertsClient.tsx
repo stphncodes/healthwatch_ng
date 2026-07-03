@@ -4,10 +4,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { BellOff } from "lucide-react";
 import type { OutbreakAlert } from "@/types/health";
-import { OUTBREAK_ALERTS } from "@/lib/mockData";
 import { RISK_ORDER } from "@/lib/theme";
 import { Card, CardHeader } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import {
   AlertFilters,
   DEFAULT_FILTERS,
@@ -16,17 +17,24 @@ import {
 import { AlertsTable } from "./AlertsTable";
 import { AlertDrawer } from "./AlertDrawer";
 
-const FILTER_OPTIONS = {
-  diseases: [...new Set(OUTBREAK_ALERTS.map((a) => a.disease))].sort(),
-  risks: [...RISK_ORDER],
-  states: [...new Set(OUTBREAK_ALERTS.map((a) => a.state))].sort(),
-  statuses: ["Active", "Investigating", "Acknowledged", "Resolved"],
-};
-
-export function AlertsClient() {
-  const [alerts, setAlerts] = useState<OutbreakAlert[]>(OUTBREAK_ALERTS);
+export function AlertsClient({
+  initialAlerts,
+}: {
+  initialAlerts: OutbreakAlert[];
+}) {
+  const [alerts, setAlerts] = useState<OutbreakAlert[]>(initialAlerts);
   const [filters, setFilters] = useState<AlertFilterState>(DEFAULT_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const filterOptions = useMemo(
+    () => ({
+      diseases: [...new Set(alerts.map((a) => a.disease))].sort(),
+      risks: [...RISK_ORDER],
+      states: [...new Set(alerts.map((a) => a.state))].sort(),
+      statuses: ["Active", "Investigating", "Acknowledged", "Resolved"],
+    }),
+    [alerts],
+  );
 
   const filtered = useMemo(
     () =>
@@ -50,12 +58,28 @@ export function AlertsClient() {
     );
   }
 
+  if (alerts.length === 0) {
+    return (
+      <Card>
+        <CardHeader
+          title="Outbreak Alerts"
+          subtitle="Alerts raised by the detection pipeline appear here"
+        />
+        <EmptyState
+          icon={BellOff}
+          title="No outbreak alerts"
+          hint="Connect Supabase and feed the outbreak_alerts table to start triaging alerts."
+        />
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-5">
       <AlertFilters
         filters={filters}
         onChange={setFilters}
-        options={FILTER_OPTIONS}
+        options={filterOptions}
         resultCount={filtered.length}
       />
 

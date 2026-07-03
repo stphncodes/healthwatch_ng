@@ -74,6 +74,8 @@ export interface PlatformUser {
   email: string;
   role: UserRole;
   state: string;
+  /** Nigerian phone number; captured at self-registration only. */
+  phone?: string;
   active: boolean;
   /** ISO-8601 timestamp of the user's most recent activity. */
   lastActive: string;

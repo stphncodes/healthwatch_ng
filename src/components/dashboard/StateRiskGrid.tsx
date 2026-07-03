@@ -1,15 +1,15 @@
 // Module: Disease Surveillance Dashboard — State Risk Grid | Owner: ML Engineer / Data Scientist
 // Heat-map style grid of all 36 states + FCT, coloured by current risk level.
 
-import { STATE_RISKS } from "@/lib/mockData";
+import type { StateRisk } from "@/types/health";
 import { RISK_ORDER, RISK_STYLES } from "@/lib/theme";
 import { formatNumber } from "@/lib/utils";
 
-export function StateRiskGrid() {
+export function StateRiskGrid({ states }: { states: StateRisk[] }) {
   return (
     <div>
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7">
-        {STATE_RISKS.map((state) => {
+        {states.map((state) => {
           const s = RISK_STYLES[state.risk];
           return (
             <div

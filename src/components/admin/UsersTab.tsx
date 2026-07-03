@@ -2,10 +2,11 @@
 "use client";
 
 import { useState } from "react";
+import { Users } from "lucide-react";
 import type { PlatformUser } from "@/types/health";
-import { PLATFORM_USERS } from "@/lib/mockData";
 import { ROLE_STYLES } from "@/lib/theme";
 import { timeAgo } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 function RoleBadge({ role }: { role: PlatformUser["role"] }) {
   const s = ROLE_STYLES[role];
@@ -48,12 +49,22 @@ function Toggle({
   );
 }
 
-export function UsersTab() {
-  const [users, setUsers] = useState<PlatformUser[]>(PLATFORM_USERS);
+export function UsersTab({ users: initialUsers }: { users: PlatformUser[] }) {
+  const [users, setUsers] = useState<PlatformUser[]>(initialUsers);
 
   function toggle(id: string) {
     setUsers((prev) =>
       prev.map((u) => (u.id === id ? { ...u, active: !u.active } : u)),
+    );
+  }
+
+  if (users.length === 0) {
+    return (
+      <EmptyState
+        icon={Users}
+        title="No platform users yet"
+        hint="Accounts created on the signup page will appear here once Supabase is connected."
+      />
     );
   }
 

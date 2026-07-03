@@ -7,14 +7,23 @@ import { useState, type ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({
+  children,
+  unreadCount,
+}: {
+  children: ReactNode;
+  unreadCount: number;
+}) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-slate-50">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="lg:pl-64">
-        <Topbar onMenuClick={() => setSidebarOpen(true)} />
+        <Topbar
+          onMenuClick={() => setSidebarOpen(true)}
+          unreadCount={unreadCount}
+        />
         <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-8">
           {children}
         </main>

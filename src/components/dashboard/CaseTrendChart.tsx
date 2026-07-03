@@ -11,7 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { WEEKLY_CASE_TRENDS } from "@/lib/mockData";
+import type { WeeklyCaseTrend } from "@/types/health";
 import { DISEASE_COLORS } from "@/lib/theme";
 
 const SERIES = [
@@ -24,12 +24,12 @@ const SERIES = [
   },
 ] as const;
 
-export function CaseTrendChart() {
+export function CaseTrendChart({ data }: { data: WeeklyCaseTrend[] }) {
   return (
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
-          data={WEEKLY_CASE_TRENDS}
+          data={data}
           margin={{ top: 8, right: 12, left: -8, bottom: 0 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />

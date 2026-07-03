@@ -1,23 +1,17 @@
 // Module: Shared Layout — Top Navbar | Owner: Frontend Lead
 "use client";
 
-import { usePathname } from "next/navigation";
-import { Bell, Menu } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Bell, LogOut, Menu } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { resolveNavItem } from "@/lib/nav";
-import { OUTBREAK_ALERTS, PLATFORM_USERS } from "@/lib/mockData";
 import { BRAND } from "@/lib/theme";
 
 interface TopbarProps {
   onMenuClick: () => void;
+  /** Alerts that still need attention (not yet acknowledged or resolved). */
+  unreadCount: number;
 }
-
-// Unread = alerts that still need attention (not yet acknowledged or resolved).
-const unreadCount = OUTBREAK_ALERTS.filter(
-  (a) => a.status === "Active" || a.status === "Investigating",
-).length;
-
-// The signed-in user for this demo session.
-const currentUser = PLATFORM_USERS[0];
 
 function initials(name: string): string {
   return name
@@ -29,9 +23,16 @@ function initials(name: string): string {
     .toUpperCase();
 }
 
-export function Topbar({ onMenuClick }: TopbarProps) {
+export function Topbar({ onMenuClick, unreadCount }: TopbarProps) {
   const pathname = usePathname();
   const nav = resolveNavItem(pathname);
+  const { user, logout } = useAuth();
+  const router = useRouter();
+
+  function handleSignOut() {
+    logout();
+    router.replace("/login");
+  }
 
   return (
     <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur lg:px-6">
@@ -67,21 +68,30 @@ export function Topbar({ onMenuClick }: TopbarProps) {
         )}
       </button>
 
-      {/* User avatar */}
-      <div className="flex items-center gap-3 border-l border-slate-200 pl-3">
-        <span
-          className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold text-white"
-          style={{ backgroundColor: BRAND.base }}
-        >
-          {initials(currentUser.name)}
-        </span>
-        <div className="hidden leading-tight sm:block">
-          <p className="text-sm font-semibold text-slate-900">
-            {currentUser.name}
-          </p>
-          <p className="text-xs text-slate-500">{currentUser.role}</p>
+      {/* Signed-in user + sign out */}
+      {user && (
+        <div className="flex items-center gap-3 border-l border-slate-200 pl-3">
+          <span
+            className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold text-white"
+            style={{ backgroundColor: BRAND.base }}
+          >
+            {initials(user.name)}
+          </span>
+          <div className="hidden leading-tight sm:block">
+            <p className="text-sm font-semibold text-slate-900">{user.name}</p>
+            <p className="text-xs text-slate-500">{user.role}</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
-      </div>
+      )}
     </header>
   );
 }
