@@ -6,6 +6,7 @@
 import { useMemo, useState } from "react";
 import { BellOff } from "lucide-react";
 import type { OutbreakAlert } from "@/types/health";
+import { acknowledgeAlert } from "@/lib/mutations";
 import { RISK_ORDER } from "@/lib/theme";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -52,10 +53,19 @@ export function AlertsClient({
     ? (alerts.find((a) => a.id === selectedId) ?? null)
     : null;
 
-  function acknowledge(id: string) {
+  async function acknowledge(id: string) {
+    const previous = alerts.find((a) => a.id === id)?.status;
+    // Optimistic update, then persist; revert if the write fails.
     setAlerts((prev) =>
       prev.map((a) => (a.id === id ? { ...a, status: "Acknowledged" } : a)),
     );
+    const result = await acknowledgeAlert(id);
+    if (!result.ok && previous) {
+      setAlerts((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, status: previous } : a)),
+      );
+      console.error(`[alerts] failed to acknowledge ${id}: ${result.error}`);
+    }
   }
 
   if (alerts.length === 0) {

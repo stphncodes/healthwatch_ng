@@ -21,8 +21,12 @@ import {
   getStateRisks,
   getWeeklyCaseTrends,
 } from "@/lib/data";
-import { formatNumber } from "@/lib/utils";
-import type { SummaryStat } from "@/types/health";
+import { formatNumber, periodDelta } from "@/lib/utils";
+import type {
+  OutbreakAlert,
+  SummaryStat,
+  WeeklyCaseTrend,
+} from "@/types/health";
 
 export const metadata: Metadata = { title: "Surveillance Dashboard" };
 
@@ -32,6 +36,49 @@ const STAT_ICONS: Record<string, LucideIcon> = {
   "states-affected": MapPin,
   "detection-time": Clock,
 };
+
+type Delta = { delta: string; trend: SummaryStat["trend"] };
+
+// Period-over-period deltas, derived from the time dimension already in the
+// data — no fabricated figures. Active cases compare the latest two epi weeks
+// of the trend series; the alert-based metrics compare the last 7 days against
+// the prior 7 days using each alert's triggeredAt. Kept out of the component
+// body so the per-request `Date.now()` isn't flagged as render-impure.
+function deriveStatDeltas(
+  alerts: OutbreakAlert[],
+  trends: WeeklyCaseTrend[],
+): { cases: Delta; outbreaks: Delta; states: Delta; detection: Delta } {
+  const now = Date.now();
+  const DAY = 86_400_000;
+  const ageDays = (a: OutbreakAlert) =>
+    (now - new Date(a.triggeredAt).getTime()) / DAY;
+  const last7 = alerts.filter((a) => ageDays(a) <= 7);
+  const prior7 = alerts.filter((a) => ageDays(a) > 7 && ageDays(a) <= 14);
+  const openCount = (list: OutbreakAlert[]) =>
+    list.filter((a) => a.status === "Active" || a.status === "Investigating")
+      .length;
+  const stateCount = (list: OutbreakAlert[]) =>
+    new Set(list.map((a) => a.state)).size;
+  const meanDet = (list: OutbreakAlert[]) =>
+    list.length > 0
+      ? list.reduce((s, a) => s + a.detectionTimeHrs, 0) / list.length
+      : 0;
+  const weekTotal = (t: WeeklyCaseTrend) =>
+    t.lassaFever + t.cholera + t.meningitis;
+
+  return {
+    cases:
+      trends.length >= 2
+        ? periodDelta(
+            weekTotal(trends[trends.length - 1]),
+            weekTotal(trends[trends.length - 2]),
+          )
+        : { delta: "", trend: "flat" },
+    outbreaks: periodDelta(openCount(last7), openCount(prior7)),
+    states: periodDelta(stateCount(last7), stateCount(prior7)),
+    detection: periodDelta(meanDet(last7), meanDet(prior7)),
+  };
+}
 
 export default async function DashboardPage() {
   const [stateRisks, alerts, trends] = await Promise.all([
@@ -54,37 +101,39 @@ export default async function DashboardPage() {
         )
       : 0;
 
+  const d = deriveStatDeltas(alerts, trends);
+
   const stats: SummaryStat[] = [
     {
       id: "active-cases",
       label: "Active cases",
       value: formatNumber(activeCases),
-      delta: "",
-      trend: "flat",
+      delta: d.cases.delta,
+      trend: d.cases.trend,
       helpText: "Across all reporting states",
     },
     {
       id: "active-outbreaks",
       label: "Active outbreaks",
       value: String(activeOutbreaks),
-      delta: "",
-      trend: "flat",
+      delta: d.outbreaks.delta,
+      trend: d.outbreaks.trend,
       helpText: "Alerts under active response",
     },
     {
       id: "states-affected",
       label: "States affected",
       value: String(statesAffected),
-      delta: "",
-      trend: "flat",
+      delta: d.states.delta,
+      trend: d.states.trend,
       helpText: "States with open alerts",
     },
     {
       id: "detection-time",
       label: "Mean detection time",
       value: alerts.length > 0 ? `${meanDetection} hrs` : "—",
-      delta: "",
-      trend: "flat",
+      delta: d.detection.delta,
+      trend: d.detection.trend,
       helpText: "Signal to confirmed detection",
     },
   ];

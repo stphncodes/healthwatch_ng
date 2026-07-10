@@ -47,9 +47,7 @@ export default async function PortalPage() {
                 ? `${report.epiWeek} · ${report.periodLabel}`
                 : "No report published yet"
             }
-            action={
-              report ? <DownloadReportButton epiWeek={report.epiWeek} /> : null
-            }
+            action={report ? <DownloadReportButton report={report} /> : null}
           />
           {report ? (
             <div className="p-5">
