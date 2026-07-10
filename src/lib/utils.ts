@@ -36,6 +36,22 @@ export function timeAgo(iso: string, now: Date = new Date()): string {
   return `${weeks}w ago`;
 }
 
+/**
+ * Period-over-period change as a signed percentage + direction, for the
+ * dashboard stat cards. Returns an empty delta / "flat" trend when there's no
+ * prior-period baseline to compare against. "up" means the metric rose (which
+ * StatCard renders red — an increase in cases/outbreaks/detection time is bad).
+ */
+export function periodDelta(
+  current: number,
+  previous: number,
+): { delta: string; trend: "up" | "down" | "flat" } {
+  if (previous <= 0) return { delta: "", trend: "flat" };
+  const pct = Math.round(((current - previous) / previous) * 100);
+  if (pct === 0) return { delta: "0%", trend: "flat" };
+  return { delta: `${pct > 0 ? "+" : ""}${pct}%`, trend: pct > 0 ? "up" : "down" };
+}
+
 /** Format an ISO timestamp as a readable date, e.g. "27 Jun 2026". */
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", {

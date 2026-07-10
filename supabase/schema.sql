@@ -161,3 +161,38 @@ create policy "App read" on public.epi_reports for select to anon, authenticated
 -- Users may update their own profile (e.g. name or phone changes).
 create policy "Own profile update" on public.profiles
   for update to authenticated using (auth.uid() = id) with check (auth.uid() = id);
+
+-- ---------------------------------------------------------------------------
+-- In-app write policies.
+-- The web app performs two writes from the browser (through the anon client,
+-- carrying the signed-in user's JWT — so `to authenticated` applies):
+--   1. Officers acknowledging an outbreak alert.
+--   2. System Admins toggling a user's active state from the admin panel.
+-- The ingest pipeline writes with the service-role key, which bypasses RLS
+-- entirely, so these policies only govern in-app mutations.
+-- ---------------------------------------------------------------------------
+
+-- Any signed-in officer may update an alert (used to acknowledge it).
+drop policy if exists "Auth update alerts" on public.outbreak_alerts;
+create policy "Auth update alerts" on public.outbreak_alerts
+  for update to authenticated using (true) with check (true);
+
+-- is_admin(): true when the caller's profile role is 'System Admin'. Declared
+-- security definer so the lookup runs with the function owner's rights and does
+-- NOT re-trigger the profiles RLS policy below (which would recurse).
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'System Admin'
+  );
+$$;
+
+-- System Admins may update any profile (used for the active/inactive toggle).
+drop policy if exists "Admin manage profiles" on public.profiles;
+create policy "Admin manage profiles" on public.profiles
+  for update to authenticated using (public.is_admin()) with check (public.is_admin());

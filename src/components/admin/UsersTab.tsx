@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { Users } from "lucide-react";
 import type { PlatformUser } from "@/types/health";
+import { setUserActive } from "@/lib/mutations";
 import { ROLE_STYLES } from "@/lib/theme";
 import { timeAgo } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -52,10 +53,21 @@ function Toggle({
 export function UsersTab({ users: initialUsers }: { users: PlatformUser[] }) {
   const [users, setUsers] = useState<PlatformUser[]>(initialUsers);
 
-  function toggle(id: string) {
+  async function toggle(id: string) {
+    const current = users.find((u) => u.id === id);
+    if (!current) return;
+    const next = !current.active;
+    // Optimistic update, then persist; revert if the write fails.
     setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, active: !u.active } : u)),
+      prev.map((u) => (u.id === id ? { ...u, active: next } : u)),
     );
+    const result = await setUserActive(id, next);
+    if (!result.ok) {
+      setUsers((prev) =>
+        prev.map((u) => (u.id === id ? { ...u, active: current.active } : u)),
+      );
+      console.error(`[admin] failed to update ${id}: ${result.error}`);
+    }
   }
 
   if (users.length === 0) {

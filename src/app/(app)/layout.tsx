@@ -15,13 +15,15 @@ export default async function DashboardLayout({
   children: ReactNode;
 }) {
   const alerts = await getOutbreakAlerts();
-  const unreadCount = alerts.filter(
+  const unread = alerts.filter(
     (a) => a.status === "Active" || a.status === "Investigating",
-  ).length;
+  );
 
   return (
     <AuthGuard>
-      <AppShell unreadCount={unreadCount}>{children}</AppShell>
+      <AppShell unreadCount={unread.length} unreadAlerts={unread.slice(0, 6)}>
+        {children}
+      </AppShell>
     </AuthGuard>
   );
 }

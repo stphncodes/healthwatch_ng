@@ -4,15 +4,18 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import type { OutbreakAlert } from "@/types/health";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 
 export function AppShell({
   children,
   unreadCount,
+  unreadAlerts,
 }: {
   children: ReactNode;
   unreadCount: number;
+  unreadAlerts: OutbreakAlert[];
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -23,6 +26,7 @@ export function AppShell({
         <Topbar
           onMenuClick={() => setSidebarOpen(true)}
           unreadCount={unreadCount}
+          unreadAlerts={unreadAlerts}
         />
         <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-8">
           {children}
