@@ -2,20 +2,29 @@
 "use client";
 
 import { useState } from "react";
-import { Database, ScrollText, Users, type LucideIcon } from "lucide-react";
+import {
+  Database,
+  ScrollText,
+  UserCheck,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import type {
   AuditEntry,
   DataSource,
   PlatformUser,
 } from "@/types/health";
 import { Card } from "@/components/ui/Card";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { APPROVER_ROLES } from "@/lib/roles";
 import { UsersTab } from "./UsersTab";
 import { DataSourcesTab } from "./DataSourcesTab";
 import { AuditLogTab } from "./AuditLogTab";
+import { PendingApprovalsTab } from "./PendingApprovalsTab";
 
-type TabId = "users" | "sources" | "audit";
+type TabId = "approvals" | "users" | "sources" | "audit";
 
-const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
+const BASE_TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
   { id: "users", label: "Users", icon: Users },
   { id: "sources", label: "Data Sources", icon: Database },
   { id: "audit", label: "Audit Log", icon: ScrollText },
@@ -28,12 +37,25 @@ interface AdminTabsProps {
 }
 
 export function AdminTabs({ users, sources, auditLog }: AdminTabsProps) {
+  const { user } = useAuth();
+  // Only Super Admins review registrations; System Admins keep the base tabs.
+  const canReview = user !== null && APPROVER_ROLES.includes(user.role);
+  const tabs = canReview
+    ? [
+        {
+          id: "approvals" as TabId,
+          label: "Pending Approvals",
+          icon: UserCheck,
+        },
+        ...BASE_TABS,
+      ]
+    : BASE_TABS;
   const [active, setActive] = useState<TabId>("users");
 
   return (
     <div className="space-y-5">
       <div className="flex gap-1 overflow-x-auto border-b border-slate-200 scrollbar-thin">
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = active === tab.id;
           return (
@@ -55,9 +77,15 @@ export function AdminTabs({ users, sources, auditLog }: AdminTabsProps) {
         })}
       </div>
 
+      {active === "approvals" && canReview && (
+        <Card>
+          <PendingApprovalsTab />
+        </Card>
+      )}
       {active === "users" && (
         <Card>
-          <UsersTab users={users} />
+          {/* Pending users live in the approvals queue, not the users table. */}
+          <UsersTab users={users.filter((u) => u.approvalStatus !== "pending")} />
         </Card>
       )}
       {active === "sources" && <DataSourcesTab sources={sources} />}

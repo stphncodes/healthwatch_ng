@@ -103,6 +103,8 @@ export async function getPlatformUsers(): Promise<PlatformUser[]> {
     state: str(r.state),
     phone: typeof r.phone === "string" ? r.phone : undefined,
     active: Boolean(r.active),
+    approvalStatus: (str(r.approval_status) ||
+      "approved") as PlatformUser["approvalStatus"],
     lastActive: str(r.last_active),
   }));
 }

@@ -1,37 +1,44 @@
 // Module: Auth — Signup Form | Owner: Frontend Lead
-// Self-registration: name, role, state of origin, email, phone and password.
-// In Supabase mode this calls supabase.auth.signUp (and shows a check-your-
-// email notice when confirmation is enabled); in local mode the account is
-// stored in the browser and signed in immediately.
+// Self-registration: name, role, state of origin, email, phone, NIN, identity
+// document photos and password. Registrations are held for Super Admin review;
+// in Supabase mode this calls supabase.auth.signUp (and shows a check-your-
+// email notice when confirmation is enabled) after uploading the documents.
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   Eye,
   EyeOff,
+  ImagePlus,
   Loader2,
   MailCheck,
+  ShieldCheck,
   UserPlus,
 } from "lucide-react";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth";
+import { compressImage, type CompressedImage } from "@/lib/images";
+import { SELF_REGISTER_ROLES } from "@/lib/roles";
 import { NIGERIAN_STATES } from "@/lib/states";
-import { BRAND, ROLE_STYLES } from "@/lib/theme";
+import { BRAND } from "@/lib/theme";
+import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types/health";
 import { AuthScreen } from "./AuthScreen";
 import { useAuth } from "./AuthProvider";
 import { fieldClasses } from "./fieldStyles";
 
-// Roles a visitor may self-register with — admin accounts are provisioned
-// centrally, so "System Admin" is deliberately excluded.
-const ROLE_OPTIONS = (Object.keys(ROLE_STYLES) as UserRole[]).filter(
-  (role) => role !== "System Admin",
-);
-
 // Nigerian mobile numbers: +234 or 0 prefix, then 70x/80x/81x/90x/91x ranges.
 const NG_PHONE_PATTERN = /^(?:\+234|0)[7-9][01]\d{8}$/;
+
+// National Identification Number: exactly 11 digits.
+const NIN_PATTERN = /^\d{11}$/;
 
 interface FieldErrors {
   name?: string;
@@ -39,6 +46,9 @@ interface FieldErrors {
   state?: string;
   email?: string;
   phone?: string;
+  nin?: string;
+  ninSlip?: string;
+  workId?: string;
   password?: string;
   confirmPassword?: string;
 }
@@ -49,11 +59,16 @@ interface FormValues {
   state: string;
   email: string;
   phone: string;
+  nin: string;
   password: string;
   confirmPassword: string;
 }
 
-function validate(values: FormValues): FieldErrors {
+type DocumentKey = "ninSlip" | "workId";
+
+type Documents = Record<DocumentKey, CompressedImage | null>;
+
+function validate(values: FormValues, documents: Documents): FieldErrors {
   const errors: FieldErrors = {};
   if (!values.name.trim()) {
     errors.name = "Full name is required.";
@@ -78,6 +93,18 @@ function validate(values: FormValues): FieldErrors {
     errors.phone =
       "Enter a valid Nigerian phone number, e.g. 0803 123 4567 or +234 803 123 4567.";
   }
+  const nin = values.nin.replace(/\s/g, "");
+  if (!nin) {
+    errors.nin = "Your NIN is required.";
+  } else if (!NIN_PATTERN.test(nin)) {
+    errors.nin = "Enter your 11-digit National Identification Number.";
+  }
+  if (!documents.ninSlip) {
+    errors.ninSlip = "Upload a photo of your NIN slip.";
+  }
+  if (!documents.workId) {
+    errors.workId = "Upload a photo of a valid work ID card.";
+  }
   if (!values.password) {
     errors.password = "Password is required.";
   } else if (values.password.length < MIN_PASSWORD_LENGTH) {
@@ -101,14 +128,22 @@ export function SignupForm() {
     state: "",
     email: "",
     phone: "",
+    nin: "",
     password: "",
     confirmPassword: "",
   });
+  const [documents, setDocuments] = useState<Documents>({
+    ninSlip: null,
+    workId: null,
+  });
+  const [processingDoc, setProcessingDoc] = useState<DocumentKey | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [authError, setAuthError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const [successMode, setSuccessMode] = useState<
+    "confirm-email" | "awaiting-approval" | null
+  >(null);
 
   // Already signed in (or registration just completed): into the app.
   useEffect(() => {
@@ -121,11 +156,39 @@ export function SignupForm() {
     setValues((prev) => ({ ...prev, [key]: value }));
   }
 
+  async function handleDocumentChange(
+    key: DocumentKey,
+    event: ChangeEvent<HTMLInputElement>,
+  ) {
+    const file = event.target.files?.[0];
+    // Allow re-selecting the same file after a "Replace".
+    event.target.value = "";
+    if (!file) return;
+    setProcessingDoc(key);
+    setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
+    try {
+      const image = await compressImage(file);
+      setDocuments((prev) => ({ ...prev, [key]: image }));
+    } catch (err) {
+      setDocuments((prev) => ({ ...prev, [key]: null }));
+      setFieldErrors((prev) => ({
+        ...prev,
+        [key]:
+          err instanceof Error
+            ? err.message
+            : "Could not read that image — choose a JPEG or PNG photo.",
+      }));
+    } finally {
+      setProcessingDoc(null);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const errors = validate(values);
+    const errors = validate(values, documents);
     setFieldErrors(errors);
     if (Object.values(errors).some(Boolean)) return;
+    if (!documents.ninSlip || !documents.workId) return;
 
     setSubmitting(true);
     setAuthError(null);
@@ -135,6 +198,9 @@ export function SignupForm() {
       state: values.state,
       email: values.email,
       phone: values.phone,
+      nin: values.nin.replace(/\s/g, ""),
+      ninSlip: documents.ninSlip,
+      workId: documents.workId,
       password: values.password,
     });
     if (!result.ok) {
@@ -144,29 +210,54 @@ export function SignupForm() {
     }
     if (result.needsEmailConfirmation) {
       // Supabase sent a confirmation link; there is no session yet.
-      setAwaitingConfirmation(true);
+      setSuccessMode("confirm-email");
+      setSubmitting(false);
+    } else if (result.pendingApproval) {
+      // Account created but locked until a Super Admin approves it.
+      setSuccessMode("awaiting-approval");
       setSubmitting(false);
     }
     // Otherwise the status effect above redirects once the session lands.
   }
 
-  if (awaitingConfirmation) {
+  if (successMode) {
+    const confirmEmail = successMode === "confirm-email";
     return (
       <AuthScreen>
         <div className="flex flex-col items-center gap-4 rounded-xl border border-slate-200 bg-white px-6 py-10 text-center shadow-sm">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
-            <MailCheck className="h-7 w-7 text-emerald-600" />
+          <span
+            className={cn(
+              "flex h-14 w-14 items-center justify-center rounded-full",
+              confirmEmail ? "bg-emerald-50" : "bg-amber-50",
+            )}
+          >
+            {confirmEmail ? (
+              <MailCheck className="h-7 w-7 text-emerald-600" />
+            ) : (
+              <ShieldCheck className="h-7 w-7 text-amber-600" />
+            )}
           </span>
           <div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              Confirm your email
+              {confirmEmail ? "Confirm your email" : "Registration submitted"}
             </h1>
             <p className="mt-2 text-sm text-slate-500">
-              We sent a confirmation link to{" "}
-              <span className="font-semibold text-slate-700">
-                {values.email.trim()}
-              </span>
-              . Click it to activate your account, then sign in.
+              {confirmEmail ? (
+                <>
+                  We sent a confirmation link to{" "}
+                  <span className="font-semibold text-slate-700">
+                    {values.email.trim()}
+                  </span>
+                  . Click it to verify your email. Your account will then be
+                  reviewed by an administrator before you can sign in.
+                </>
+              ) : (
+                <>
+                  Your account is awaiting administrator approval. We&apos;ll
+                  verify your NIN and work ID — you&apos;ll be able to sign in
+                  once your registration has been reviewed.
+                </>
+              )}
             </p>
           </div>
           <Link
@@ -244,7 +335,7 @@ export function SignupForm() {
               <option value="" disabled>
                 Select your role
               </option>
-              {ROLE_OPTIONS.map((role) => (
+              {SELF_REGISTER_ROLES.map((role) => (
                 <option key={role} value={role}>
                   {role}
                 </option>
@@ -335,6 +426,55 @@ export function SignupForm() {
           {fieldErrors.phone && (
             <p className="mt-1.5 text-xs text-red-600">{fieldErrors.phone}</p>
           )}
+        </div>
+
+        <div>
+          <label
+            htmlFor="nin"
+            className="block text-sm font-medium text-slate-700"
+          >
+            National Identification Number (NIN)
+          </label>
+          <input
+            id="nin"
+            type="text"
+            inputMode="numeric"
+            maxLength={11}
+            autoComplete="off"
+            value={values.nin}
+            onChange={(e) => setValue("nin", e.target.value)}
+            aria-invalid={Boolean(fieldErrors.nin)}
+            placeholder="12345678901"
+            className={fieldClasses(Boolean(fieldErrors.nin))}
+          />
+          {fieldErrors.nin ? (
+            <p className="mt-1.5 text-xs text-red-600">{fieldErrors.nin}</p>
+          ) : (
+            <p className="mt-1.5 text-xs text-slate-400">
+              Used by NCDC to verify your identity before approval.
+            </p>
+          )}
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <DocumentPicker
+            id="ninSlip"
+            label="NIN slip photo"
+            hint="Clear photo of your NIN slip."
+            image={documents.ninSlip}
+            processing={processingDoc === "ninSlip"}
+            error={fieldErrors.ninSlip}
+            onChange={(e) => handleDocumentChange("ninSlip", e)}
+          />
+          <DocumentPicker
+            id="workId"
+            label="Work ID card photo"
+            hint="Valid staff/official ID card."
+            image={documents.workId}
+            processing={processingDoc === "workId"}
+            error={fieldErrors.workId}
+            onChange={(e) => handleDocumentChange("workId", e)}
+          />
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
@@ -435,5 +575,72 @@ export function SignupForm() {
         </Link>
       </p>
     </AuthScreen>
+  );
+}
+
+interface DocumentPickerProps {
+  id: DocumentKey;
+  label: string;
+  hint: string;
+  image: CompressedImage | null;
+  processing: boolean;
+  error?: string;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+}
+
+function DocumentPicker({
+  id,
+  label,
+  hint,
+  image,
+  processing,
+  error,
+  onChange,
+}: DocumentPickerProps) {
+  return (
+    <div>
+      <span className="block text-sm font-medium text-slate-700">{label}</span>
+      <label
+        htmlFor={id}
+        className={cn(
+          "mt-1.5 flex cursor-pointer items-center gap-3 rounded-lg border border-dashed px-3.5 py-3 transition-colors",
+          error
+            ? "border-red-300 bg-red-50/50"
+            : "border-slate-300 bg-slate-50 hover:border-slate-400",
+        )}
+      >
+        {image ? (
+          // Previews come from in-memory data URLs; next/image adds nothing here.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={image.dataUrl}
+            alt={`${label} preview`}
+            className="h-12 w-16 shrink-0 rounded-md border border-slate-200 object-cover"
+          />
+        ) : (
+          <span className="flex h-12 w-16 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white">
+            {processing ? (
+              <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+            ) : (
+              <ImagePlus className="h-4 w-4 text-slate-400" />
+            )}
+          </span>
+        )}
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-medium text-slate-600">
+            {processing ? "Processing…" : image ? "Replace photo" : "Upload photo"}
+          </span>
+          <span className="block text-xs text-slate-400">{hint}</span>
+        </span>
+      </label>
+      <input
+        id={id}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        onChange={onChange}
+      />
+      {error && <p className="mt-1.5 text-xs text-red-600">{error}</p>}
+    </div>
   );
 }

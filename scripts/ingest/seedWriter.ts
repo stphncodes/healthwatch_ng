@@ -44,43 +44,12 @@ const PK: Record<keyof Dataset, string> = {
   epi_reports: "epi_week",
 };
 
-const DEMO_USERS_BLOCK = `
+const ADMIN_NOTE = `
 -- ---------------------------------------------------------------------------
--- OPTIONAL demo accounts (so the Admin → Users tab isn't empty).
--- profiles.id is a FK to auth.users, so profiles can't be seeded directly;
--- instead we insert auth.users and let the handle_new_user() trigger create
--- the matching profiles rows from raw_user_meta_data.
--- Each account's password is 'HealthWatch#2026'.
--- This block is version-sensitive (GoTrue internals). If it errors on your
--- Supabase version, DELETE it and just self-register on the signup page —
--- everything above this line seeds fine on its own.
+-- No accounts are seeded. Register on /signup, then promote your first
+-- Super Admin by running supabase/promote_admin.sql in the SQL editor —
+-- admin accounts are provisioned by SQL only, never through the UI.
 -- ---------------------------------------------------------------------------
-insert into auth.users
-  (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
-   raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
-   confirmation_token, recovery_token, email_change_token_new, email_change)
-values
-  ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated',
-   'amina.bello@ncdc.demo', crypt('HealthWatch#2026', gen_salt('bf')), now(),
-   '{"provider":"email","providers":["email"]}',
-   '{"name":"Dr. Amina Bello","role":"State Coordinator","state":"Borno","phone":"08030000001"}',
-   now(), now(), '', '', '', ''),
-  ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated',
-   'tunde.okon@ncdc.demo', crypt('HealthWatch#2026', gen_salt('bf')), now(),
-   '{"provider":"email","providers":["email"]}',
-   '{"name":"Dr. Tunde Okon","role":"Health Officer","state":"Lagos","phone":"08030000002"}',
-   now(), now(), '', '', '', ''),
-  ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated',
-   'fatima.sani@ncdc.demo', crypt('HealthWatch#2026', gen_salt('bf')), now(),
-   '{"provider":"email","providers":["email"]}',
-   '{"name":"Dr. Fatima Sani","role":"Data Scientist","state":"Kano","phone":"08030000003"}',
-   now(), now(), '', '', '', ''),
-  ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated',
-   'admin@ncdc.demo', crypt('HealthWatch#2026', gen_salt('bf')), now(),
-   '{"provider":"email","providers":["email"]}',
-   '{"name":"System Admin","role":"System Admin","state":"FCT","phone":"08030000004"}',
-   now(), now(), '', '', '', '')
-on conflict (id) do nothing;
 `;
 
 export function writeSeedSql(
@@ -104,7 +73,7 @@ export function writeSeedSql(
     )
     .join("\n");
 
-  const sql = header + body + DEMO_USERS_BLOCK;
+  const sql = header + body + ADMIN_NOTE;
   const outPath = join(process.cwd(), "supabase", "seed.sql");
   writeFileSync(outPath, sql, "utf8");
   return outPath;

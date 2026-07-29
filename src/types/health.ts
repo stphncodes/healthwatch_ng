@@ -17,11 +17,15 @@ export type AlertStatus = "Active" | "Investigating" | "Acknowledged" | "Resolve
 
 /** Operational role of a platform user. */
 export type UserRole =
+  | "Super Admin"
   | "System Admin"
   | "Data Engineer"
   | "Data Scientist"
   | "Health Officer"
   | "State Coordinator";
+
+/** Review state of a self-registered account; only "approved" users may sign in. */
+export type ApprovalStatus = "pending" | "approved" | "rejected";
 
 /** Connection health of an upstream data source integration. */
 export type SourceStatus = "Connected" | "Degraded" | "Offline";
@@ -77,8 +81,22 @@ export interface PlatformUser {
   /** Nigerian phone number; captured at self-registration only. */
   phone?: string;
   active: boolean;
+  /** Accounts created before the approval flow map to "approved". */
+  approvalStatus: ApprovalStatus;
   /** ISO-8601 timestamp of the user's most recent activity. */
   lastActive: string;
+}
+
+/** A pending registration awaiting Super Admin review, with identity evidence. */
+export interface PendingApproval {
+  user: PlatformUser;
+  /** Typed 11-digit National Identification Number, for cross-checking the slip. */
+  nin: string;
+  /** Displayable URL (signed URL in Supabase mode; data URL in local mode). */
+  ninSlipUrl: string;
+  workIdUrl: string;
+  /** ISO-8601 timestamp the registration was submitted. */
+  submittedAt: string;
 }
 
 /** An upstream integration feeding surveillance data into the platform. */
