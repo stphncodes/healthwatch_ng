@@ -6,7 +6,6 @@ import {
   Activity,
   BellRing,
   ClipboardList,
-  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -36,13 +35,8 @@ export const NAV_ITEMS: NavItem[] = [
     description: "Triage, investigate and acknowledge active alerts",
     icon: BellRing,
   },
-  {
-    href: "/admin",
-    label: "Admin Panel",
-    title: "Admin Panel",
-    description: "Users, data sources and the system audit trail",
-    icon: ShieldCheck,
-  },
+  // NOTE: /admin is deliberately absent — the Admin Console is a standalone
+  // route with its own sign-in (src/app/admin), not part of the app shell.
   {
     href: "/portal",
     label: "Officer Portal",
