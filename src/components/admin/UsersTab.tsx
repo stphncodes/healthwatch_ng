@@ -1,4 +1,4 @@
-// Module: Admin Panel — Users Tab | Owner: System Admin / Platform Engineer
+// Module: Admin Panel — Users Tab | Owner: Platform Engineer
 "use client";
 
 import { useState } from "react";

@@ -321,7 +321,7 @@ export function buildDataset(
     { id: "EV-30002", user_name: "Dr. Amina Bello", action: "Signed in", resource: "auth/session", timestamp: iso(now, 3), category: "Auth" },
     { id: "EV-30003", user_name: "Dr. Tunde Okon", action: "Acknowledged alert AL-2026-0141", resource: "outbreak_alerts", timestamp: iso(now, 9), category: "Alert" },
     { id: "EV-30004", user_name: "Dr. Ngozi Umeh", action: "Exported weekly bulletin (PDF)", resource: "epi_reports", timestamp: iso(now, 20), category: "Export" },
-    { id: "EV-30005", user_name: "System Admin", action: "Updated risk threshold config", resource: "config/thresholds", timestamp: iso(now, 30), category: "Config" },
+    { id: "EV-30005", user_name: "Admin", action: "Updated risk threshold config", resource: "config/thresholds", timestamp: iso(now, 30), category: "Config" },
     { id: "EV-30006", user_name: "Dr. Fatima Sani", action: "Signed in", resource: "auth/session", timestamp: iso(now, 48), category: "Auth" },
     { id: "EV-30007", user_name: "ingest-pipeline", action: "Refreshed state risk grid", resource: "state_risks", timestamp: iso(now, 26), category: "Data" },
   ];
