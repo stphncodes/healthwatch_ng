@@ -96,7 +96,7 @@ insert into public.audit_log (id, user_name, action, resource, timestamp, catego
   ('EV-30002', 'Dr. Amina Bello', 'Signed in', 'auth/session', '2026-07-29T12:51:05.622Z', 'Auth'),
   ('EV-30003', 'Dr. Tunde Okon', 'Acknowledged alert AL-2026-0141', 'outbreak_alerts', '2026-07-29T06:51:05.622Z', 'Alert'),
   ('EV-30004', 'Dr. Ngozi Umeh', 'Exported weekly bulletin (PDF)', 'epi_reports', '2026-07-28T19:51:05.622Z', 'Export'),
-  ('EV-30005', 'System Admin', 'Updated risk threshold config', 'config/thresholds', '2026-07-28T09:51:05.622Z', 'Config'),
+  ('EV-30005', 'Admin', 'Updated risk threshold config', 'config/thresholds', '2026-07-28T09:51:05.622Z', 'Config'),
   ('EV-30006', 'Dr. Fatima Sani', 'Signed in', 'auth/session', '2026-07-27T15:51:05.622Z', 'Auth'),
   ('EV-30007', 'ingest-pipeline', 'Refreshed state risk grid', 'state_risks', '2026-07-28T13:51:05.622Z', 'Data')
 on conflict (id) do nothing;
@@ -134,7 +134,7 @@ insert into public.epi_reports (epi_week, period_label, total_cases_reported, ne
 on conflict (epi_week) do nothing;
 
 -- ---------------------------------------------------------------------------
--- No accounts are seeded. Register on /signup, then promote your first
--- Super Admin by running supabase/promote_admin.sql in the SQL editor —
--- admin accounts are provisioned by SQL only, never through the UI.
+-- No accounts are seeded here. Create the single Admin account by running
+-- supabase/seed_admin.sql in the SQL editor — the admin is provisioned by
+-- SQL only, never through the UI.
 -- ---------------------------------------------------------------------------

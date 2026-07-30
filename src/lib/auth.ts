@@ -1,19 +1,19 @@
 // Module: Auth Service | Owner: Frontend Lead / Backend Lead
 // Dual-mode authentication:
 //  - Supabase mode (NEXT_PUBLIC_SUPABASE_* set): real email/password auth via
-//    supabase.auth. Signup uploads the applicant's identity documents to the
+//    supabase.auth. Signup uploads the applicant's government ID photo to the
 //    private `identity-documents` bucket, then carries profile fields (name,
-//    role, state, phone, nin, document paths) in user metadata, mirrored to
-//    the `profiles` + `identity_documents` tables by a DB trigger
-//    (see supabase/schema.sql).
+//    state, phone, nin, document path) in user metadata, mirrored to the
+//    `profiles` + `identity_documents` tables by a DB trigger
+//    (see supabase/schema.sql). Every self-registered account is a Member;
+//    the single Admin is seeded by SQL (supabase/seed_admin.sql).
 //  - Local mode (no Supabase env): accounts self-registered on /signup are
 //    kept in localStorage with SHA-256 password hashes, so the flow behaves
-//    the same without a backend. Local signups are auto-approved: admin
-//    accounts are never created through the UI (SQL promotion only — see
-//    supabase/promote_admin.sql), so without a backend there is nobody to
-//    review a pending registration.
-// In Supabase mode new registrations are `pending` until a Super Admin
-// approves them; no session is established for pending/rejected accounts.
+//    the same without a backend. Local signups are auto-approved: the Admin
+//    account exists only in Supabase, so without a backend there is nobody
+//    to review a pending registration.
+// In Supabase mode new registrations are `pending` until the Admin approves
+// them; no session is established for pending/rejected accounts.
 // Both modes surface the session through the same subscribe/snapshot pair,
 // consumed by AuthProvider via useSyncExternalStore.
 
@@ -47,28 +47,19 @@ export type RegisterResult =
   | { ok: true; needsEmailConfirmation: boolean; pendingApproval: boolean }
   | { ok: false; message: string };
 
-const USER_ROLES: UserRole[] = [
-  "Super Admin",
-  "System Admin",
-  "Data Engineer",
-  "Data Scientist",
-  "Health Officer",
-  "State Coordinator",
-];
+const USER_ROLES: UserRole[] = ["Admin", "Member"];
 
 export interface RegistrationInput {
   name: string;
-  role: UserRole;
   /** State of origin — one of the 36 states or the FCT. */
   state: string;
   email: string;
   phone: string;
   /** Typed 11-digit National Identification Number. */
   nin: string;
-  /** Photo of the applicant's NIN slip. */
-  ninSlip: CompressedImage;
-  /** Photo of a valid work ID card. */
-  workId: CompressedImage;
+  /** Photo of any valid government ID — NIN slip, national ID card,
+   * driver's licence, passport, or voter's card. */
+  idPhoto: CompressedImage;
   password: string;
 }
 
@@ -202,7 +193,7 @@ async function applySession(session: Session | null): Promise<void> {
 function mapProfileRow(authUser: User, row: ProfileRow | null): PlatformUser | null {
   if (!row) return null;
   if (row.approval_status !== "approved" || row.active === false) return null;
-  const role = USER_ROLES.find((r) => r === row.role) ?? "Health Officer";
+  const role = USER_ROLES.find((r) => r === row.role) ?? "Member";
   return {
     id: authUser.id,
     name: row.name || (authUser.email ?? "User"),
@@ -261,25 +252,19 @@ async function supabaseRegister(
 ): Promise<RegisterResult> {
   const supabase = getSupabase();
 
-  // Documents are uploaded BEFORE signUp: with email confirmation enabled
+  // The document is uploaded BEFORE signUp: with email confirmation enabled
   // signUp returns no session, so this is the only moment the browser can
-  // write them (the bucket's insert policy covers the anon role).
+  // write it (the bucket's insert policy covers the anon role).
   const folder = crypto.randomUUID();
-  const ninSlipPath = `signup/${folder}/nin-slip.jpg`;
-  const workIdPath = `signup/${folder}/work-id.jpg`;
-  const uploads = await Promise.all([
-    supabase.storage
-      .from(DOCUMENTS_BUCKET)
-      .upload(ninSlipPath, input.ninSlip.blob, { contentType: "image/jpeg" }),
-    supabase.storage
-      .from(DOCUMENTS_BUCKET)
-      .upload(workIdPath, input.workId.blob, { contentType: "image/jpeg" }),
-  ]);
-  if (uploads.some((r) => r.error)) {
+  const idPhotoPath = `signup/${folder}/id-photo.jpg`;
+  const upload = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .upload(idPhotoPath, input.idPhoto.blob, { contentType: "image/jpeg" });
+  if (upload.error) {
     return {
       ok: false,
       message:
-        "Could not upload your identity documents — check your connection and try again.",
+        "Could not upload your ID document — check your connection and try again.",
     };
   }
 
@@ -289,12 +274,10 @@ async function supabaseRegister(
     options: {
       data: {
         name: input.name.trim(),
-        role: input.role,
         state: input.state,
         phone: normalizePhone(input.phone),
         nin: input.nin.trim(),
-        nin_slip_path: ninSlipPath,
-        work_id_path: workIdPath,
+        id_photo_path: idPhotoPath,
       },
     },
   });
@@ -317,8 +300,7 @@ interface LocalAccount extends PlatformUser {
   passwordHash: string;
   /** Identity evidence; absent on accounts created before the approval flow. */
   nin?: string;
-  ninSlipDataUrl?: string;
-  workIdDataUrl?: string;
+  idPhotoDataUrl?: string;
 }
 
 // Parsed accounts are cached against the raw localStorage string so session
@@ -338,9 +320,11 @@ function loadAccounts(): LocalAccount[] {
     accounts = [];
   }
   // Accounts stored before the approval flow have no approvalStatus — they
-  // were usable then, so they remain approved.
+  // were usable then, so they remain approved. Accounts stored before the
+  // two-role model carry retired role strings — they become Members.
   for (const account of accounts) {
     if (!account.approvalStatus) account.approvalStatus = "approved";
+    if (!USER_ROLES.includes(account.role)) account.role = "Member";
   }
   accountsCache = { raw, accounts };
   return accounts;
@@ -420,12 +404,12 @@ async function localRegister(
     };
   }
   // Auto-approved: no admin exists in local mode to review a pending signup
-  // (admin accounts are provisioned by SQL only, which needs Supabase).
+  // (the Admin account is seeded by SQL only, which needs Supabase).
   const account: LocalAccount = {
     id: `U-${Date.now().toString(36).toUpperCase()}`,
     name: input.name.trim(),
     email,
-    role: input.role,
+    role: "Member",
     state: input.state,
     phone: normalizePhone(input.phone),
     active: true,
@@ -433,8 +417,7 @@ async function localRegister(
     lastActive: new Date().toISOString(),
     passwordHash: await hashPassword(input.password),
     nin: input.nin.trim(),
-    ninSlipDataUrl: input.ninSlip.dataUrl,
-    workIdDataUrl: input.workId.dataUrl,
+    idPhotoDataUrl: input.idPhoto.dataUrl,
   };
   try {
     window.localStorage.setItem(

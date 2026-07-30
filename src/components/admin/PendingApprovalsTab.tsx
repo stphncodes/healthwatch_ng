@@ -1,7 +1,7 @@
-// Module: Admin Panel — Pending Approvals Tab | Owner: System Admin / Platform Engineer
-// Super Admin review queue for new registrations. Fetches client-side via
+// Module: Admin Panel — Pending Approvals Tab | Owner: Platform Engineer
+// Admin review queue for new registrations. Fetches client-side via
 // src/lib/approvals.ts — a documented exception to the server-component data
-// flow, because identity documents are Super-Admin-gated by RLS and the server
+// flow, because identity documents are Admin-gated by RLS and the server
 // fetch path only carries the anon key.
 "use client";
 
@@ -175,9 +175,8 @@ export function PendingApprovalsTab() {
             </div>
           </div>
 
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <DocumentThumb label="NIN slip" url={approval.ninSlipUrl} />
-            <DocumentThumb label="Work ID card" url={approval.workIdUrl} />
+          <div className="mt-4">
+            <DocumentThumb label="Government ID" url={approval.idPhotoUrl} />
           </div>
         </div>
       ))}

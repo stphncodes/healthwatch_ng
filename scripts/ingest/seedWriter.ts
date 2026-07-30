@@ -46,9 +46,9 @@ const PK: Record<keyof Dataset, string> = {
 
 const ADMIN_NOTE = `
 -- ---------------------------------------------------------------------------
--- No accounts are seeded. Register on /signup, then promote your first
--- Super Admin by running supabase/promote_admin.sql in the SQL editor —
--- admin accounts are provisioned by SQL only, never through the UI.
+-- No accounts are seeded here. Create the single Admin account by running
+-- supabase/seed_admin.sql in the SQL editor — the admin is provisioned by
+-- SQL only, never through the UI.
 -- ---------------------------------------------------------------------------
 `;
 

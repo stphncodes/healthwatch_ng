@@ -6,14 +6,16 @@
 
 -- ---------------------------------------------------------------------------
 -- Profiles — one row per auth user, populated automatically at signup from
--- the metadata the signup form sends (name, role, state, phone).
+-- the metadata the signup form sends (name, state, phone). Two roles only:
+-- every self-registered account is a Member; the single Admin is seeded by
+-- supabase/seed_admin.sql (no UI path).
 -- ---------------------------------------------------------------------------
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   name text not null,
   email text not null,
-  role text not null default 'Health Officer'
-    check (role in ('Super Admin', 'System Admin', 'Data Engineer', 'Data Scientist', 'Health Officer', 'State Coordinator')),
+  role text not null default 'Member'
+    check (role in ('Admin', 'Member')),
   state text not null default '',
   phone text,
   active boolean not null default true,
@@ -25,15 +27,14 @@ create table if not exists public.profiles (
 );
 
 -- ---------------------------------------------------------------------------
--- Identity documents — NIN + document photo paths submitted at signup.
+-- Identity documents — NIN + government ID photo path submitted at signup.
 -- Kept OUT of profiles because profiles is readable with the anon key (the
--- server components' fetch path); this PII is visible to Super Admins only.
+-- server components' fetch path); this PII is visible to the Admin only.
 -- ---------------------------------------------------------------------------
 create table if not exists public.identity_documents (
   user_id uuid primary key references public.profiles (id) on delete cascade,
   nin text not null default '',
-  nin_slip_path text not null default '',
-  work_id_path text not null default '',
+  id_photo_path text not null default '',
   submitted_at timestamptz not null default now()
 );
 
@@ -42,34 +43,25 @@ returns trigger
 language plpgsql
 security definer set search_path = public
 as $$
-declare
-  requested_role text := new.raw_user_meta_data ->> 'role';
-  safe_role text;
 begin
-  -- Signup metadata is client-controlled: clamp self-registered roles to the
-  -- non-admin set (mirrors SELF_REGISTER_ROLES in src/lib/roles.ts). Admin
-  -- roles are provisioned via seed.sql or the SQL editor.
-  safe_role := case
-    when requested_role in ('Data Engineer', 'Data Scientist', 'Health Officer', 'State Coordinator')
-      then requested_role
-    else 'Health Officer'
-  end;
+  -- Signup metadata is client-controlled, so the role is never read from it:
+  -- every self-registered account is a Member. The Admin is seeded by
+  -- supabase/seed_admin.sql only.
   insert into public.profiles (id, name, email, role, state, phone, approval_status)
   values (
     new.id,
     coalesce(new.raw_user_meta_data ->> 'name', new.email),
     new.email,
-    safe_role,
+    'Member',
     coalesce(new.raw_user_meta_data ->> 'state', ''),
     new.raw_user_meta_data ->> 'phone',
     'pending'
   );
-  insert into public.identity_documents (user_id, nin, nin_slip_path, work_id_path)
+  insert into public.identity_documents (user_id, nin, id_photo_path)
   values (
     new.id,
     coalesce(new.raw_user_meta_data ->> 'nin', ''),
-    coalesce(new.raw_user_meta_data ->> 'nin_slip_path', ''),
-    coalesce(new.raw_user_meta_data ->> 'work_id_path', '')
+    coalesce(new.raw_user_meta_data ->> 'id_photo_path', '')
   );
   return new;
 end;
@@ -201,22 +193,21 @@ create policy "Own profile update" on public.profiles
 
 -- ---------------------------------------------------------------------------
 -- In-app write policies.
--- The web app performs two writes from the browser (through the anon client,
--- carrying the signed-in user's JWT — so `to authenticated` applies):
---   1. Officers acknowledging an outbreak alert.
---   2. System Admins toggling a user's active state from the admin panel.
+-- The web app writes from the browser through the anon client carrying the
+-- signed-in user's JWT — so `to authenticated` applies:
+--   1. Officers acknowledging an outbreak alert (acknowledge_alert() RPC).
+--   2. The Admin toggling a user's active state from the admin panel.
+--   3. The Admin editing content (alerts, state risks, data sources) from
+--      the Admin Console (src/lib/adminContent.ts).
 -- The ingest pipeline writes with the service-role key, which bypasses RLS
--- entirely, so these policies only govern in-app mutations.
+-- entirely, so these policies only govern in-app mutations. The remaining
+-- pipeline tables (trends, forecasts, LGAs, epi reports) get NO browser
+-- write policies — they are refreshed via the admin refresh route only.
 -- ---------------------------------------------------------------------------
 
--- Any signed-in officer may update an alert (used to acknowledge it).
-drop policy if exists "Auth update alerts" on public.outbreak_alerts;
-create policy "Auth update alerts" on public.outbreak_alerts
-  for update to authenticated using (true) with check (true);
-
--- is_admin(): true when the caller's profile role is an admin role. Declared
--- security definer so the lookup runs with the function owner's rights and does
--- NOT re-trigger the profiles RLS policy below (which would recurse).
+-- is_admin(): true when the caller's profile is the Admin. Declared security
+-- definer so the lookup runs with the function owner's rights and does NOT
+-- re-trigger the profiles RLS policy below (which would recurse).
 create or replace function public.is_admin()
 returns boolean
 language sql
@@ -225,35 +216,51 @@ stable
 as $$
   select exists (
     select 1 from public.profiles
-    where id = auth.uid() and role in ('System Admin', 'Super Admin')
+    where id = auth.uid() and role = 'Admin'
   );
 $$;
 
--- is_super_admin(): true only for the Super Admin role, which alone may review
--- registrations and read identity documents.
-create or replace function public.is_super_admin()
-returns boolean
-language sql
+-- Direct alert writes are Admin-only; officers acknowledge through this
+-- security-definer RPC, which can only flip the status to 'Acknowledged'.
+create or replace function public.acknowledge_alert(alert_id text)
+returns void
+language plpgsql
 security definer set search_path = public
-stable
 as $$
-  select exists (
-    select 1 from public.profiles
-    where id = auth.uid() and role = 'Super Admin'
-  );
+begin
+  if auth.uid() is null then
+    raise exception 'Sign in to acknowledge an alert';
+  end if;
+  update public.outbreak_alerts set status = 'Acknowledged' where id = alert_id;
+end;
 $$;
+revoke execute on function public.acknowledge_alert(text) from anon;
 
--- Admins may update any profile (used for the active/inactive toggle).
+-- Admin content editing (Admin Console): full write access to the three
+-- hand-editable tables.
+drop policy if exists "Admin manage alerts" on public.outbreak_alerts;
+create policy "Admin manage alerts" on public.outbreak_alerts
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "Admin manage state risks" on public.state_risks;
+create policy "Admin manage state risks" on public.state_risks
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "Admin manage data sources" on public.data_sources;
+create policy "Admin manage data sources" on public.data_sources
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+-- The Admin may update any profile (used for the active/inactive toggle).
 drop policy if exists "Admin manage profiles" on public.profiles;
 create policy "Admin manage profiles" on public.profiles
   for update to authenticated using (public.is_admin()) with check (public.is_admin());
 
--- Identity documents: Super Admin read only. Deliberately NO anon policy (this
--- is NIN PII, and the anon key must never see it) and NO insert policy (rows
+-- Identity documents: Admin read only. Deliberately NO anon policy (this is
+-- NIN PII, and the anon key must never see it) and NO insert policy (rows
 -- are written by the security-definer signup trigger).
-drop policy if exists "Super admin read documents" on public.identity_documents;
-create policy "Super admin read documents" on public.identity_documents
-  for select to authenticated using (public.is_super_admin());
+drop policy if exists "Admin read documents" on public.identity_documents;
+create policy "Admin read documents" on public.identity_documents
+  for select to authenticated using (public.is_admin());
 
 -- ---------------------------------------------------------------------------
 -- Registration review.
@@ -268,8 +275,8 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  if not public.is_super_admin() then
-    raise exception 'Only a Super Admin may review registrations';
+  if not public.is_admin() then
+    raise exception 'Only an administrator may review registrations';
   end if;
   if decision not in ('approved', 'rejected') then
     raise exception 'Invalid decision: %', decision;
@@ -287,7 +294,7 @@ grant update (name, phone, state, active, last_active) on public.profiles to aut
 -- Private bucket; uploads happen BEFORE auth.signUp (there may be no session
 -- when email confirmation is on), hence the anon INSERT policy. No update or
 -- delete policies — objects cannot be overwritten or removed from the client.
--- Reads (and therefore signed URLs) are Super Admin only.
+-- Reads (and therefore signed URLs) are Admin only.
 -- ---------------------------------------------------------------------------
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('identity-documents', 'identity-documents', false, 2097152,
@@ -299,7 +306,7 @@ create policy "Signup docs upload" on storage.objects
   for insert to anon, authenticated
   with check (bucket_id = 'identity-documents');
 
-drop policy if exists "Super admin read docs" on storage.objects;
-create policy "Super admin read docs" on storage.objects
+drop policy if exists "Admin read docs" on storage.objects;
+create policy "Admin read docs" on storage.objects
   for select to authenticated
-  using (bucket_id = 'identity-documents' and public.is_super_admin());
+  using (bucket_id = 'identity-documents' and public.is_admin());

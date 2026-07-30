@@ -6,7 +6,6 @@
 // so the optimistic in-session UI still works.
 
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
-import type { AlertStatus } from "@/types/health";
 
 export interface MutationResult {
   ok: boolean;
@@ -17,15 +16,15 @@ function fail(err: unknown): MutationResult {
   return { ok: false, error: err instanceof Error ? err.message : String(err) };
 }
 
-/** Persist an alert acknowledgement (status → "Acknowledged"). */
+/** Persist an alert acknowledgement (status → "Acknowledged"). Goes through
+ * the acknowledge_alert() RPC: direct alert writes are Admin-only by RLS,
+ * but any signed-in officer may acknowledge. */
 export async function acknowledgeAlert(id: string): Promise<MutationResult> {
   if (!isSupabaseConfigured) return { ok: true };
   try {
-    const status: AlertStatus = "Acknowledged";
-    const { error } = await getSupabase()
-      .from("outbreak_alerts")
-      .update({ status })
-      .eq("id", id);
+    const { error } = await getSupabase().rpc("acknowledge_alert", {
+      alert_id: id,
+    });
     return error ? { ok: false, error: error.message } : { ok: true };
   } catch (err) {
     return fail(err);

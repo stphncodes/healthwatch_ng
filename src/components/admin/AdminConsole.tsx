@@ -1,8 +1,8 @@
-// Module: Admin Console — Gate & Shell | Owner: System Admin / Platform Engineer
+// Module: Admin Console — Gate & Shell | Owner: Platform Engineer
 // The standalone /admin experience: its own sign-in screen (separate from the
 // user-facing /login), a role check, and a minimal header around AdminTabs.
-// Only ADMIN_ROLES get past the gate; admin accounts are provisioned by SQL
-// (supabase/promote_admin.sql), never through any UI.
+// Only the Admin gets past the gate; the single admin account is seeded by
+// SQL (supabase/seed_admin.sql), never through any UI.
 "use client";
 
 import { useState, type FormEvent } from "react";
@@ -17,19 +17,33 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { fieldClasses } from "@/components/auth/fieldStyles";
-import { ADMIN_ROLES } from "@/lib/roles";
+import { isAdmin } from "@/lib/roles";
 import { BRAND } from "@/lib/theme";
-import type { AuditEntry, DataSource, PlatformUser } from "@/types/health";
+import type {
+  AuditEntry,
+  DataSource,
+  OutbreakAlert,
+  PlatformUser,
+  StateRisk,
+} from "@/types/health";
 import { AdminTabs } from "./AdminTabs";
 import { RoleBadge } from "./RoleBadge";
 
 interface AdminConsoleProps {
   users: PlatformUser[];
+  alerts: OutbreakAlert[];
+  risks: StateRisk[];
   sources: DataSource[];
   auditLog: AuditEntry[];
 }
 
-export function AdminConsole({ users, sources, auditLog }: AdminConsoleProps) {
+export function AdminConsole({
+  users,
+  alerts,
+  risks,
+  sources,
+  auditLog,
+}: AdminConsoleProps) {
   const { status, user, logout } = useAuth();
 
   if (status === "loading") {
@@ -50,7 +64,7 @@ export function AdminConsole({ users, sources, auditLog }: AdminConsoleProps) {
     return <AdminLogin />;
   }
 
-  if (!user || !ADMIN_ROLES.includes(user.role)) {
+  if (!user || !isAdmin(user.role)) {
     return (
       <Centered>
         <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/15">
@@ -99,7 +113,7 @@ export function AdminConsole({ users, sources, auditLog }: AdminConsoleProps) {
               HealthWatch NG · Admin Console
             </span>
             <span className="block text-[11px] font-medium text-emerald-200/80">
-              Registrations, users, data sources and audit
+              Registrations, users, content and audit
             </span>
           </span>
         </div>
@@ -126,7 +140,13 @@ export function AdminConsole({ users, sources, auditLog }: AdminConsoleProps) {
       </header>
 
       <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
-        <AdminTabs users={users} sources={sources} auditLog={auditLog} />
+        <AdminTabs
+          users={users}
+          alerts={alerts}
+          risks={risks}
+          sources={sources}
+          auditLog={auditLog}
+        />
       </main>
     </div>
   );

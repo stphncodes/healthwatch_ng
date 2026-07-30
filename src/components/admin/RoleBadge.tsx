@@ -1,4 +1,4 @@
-// Module: Admin Panel — Role Badge | Owner: System Admin / Platform Engineer
+// Module: Admin Panel — Role Badge | Owner: Platform Engineer
 // Shared pill badge for a user's role, coloured from the ROLE_STYLES map.
 
 import type { PlatformUser } from "@/types/health";

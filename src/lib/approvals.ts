@@ -1,9 +1,9 @@
 // Module: Registration Approvals (client-side) | Owner: Backend / Platform Engineer
-// Data layer for the Super Admin's Pending Approvals tab. Runs ONLY in the
-// browser — a deliberate exception to the server-component data flow: identity
-// documents are NIN PII gated to Super Admins by RLS, and the server fetches
-// with the anon key, so this is the one path that must use the authenticated
-// browser client (whose JWT satisfies the is_super_admin() policies).
+// Data layer for the Admin's Pending Approvals tab. Runs ONLY in the browser —
+// a deliberate exception to the server-component data flow: identity documents
+// are NIN PII gated to the Admin by RLS, and the server fetches with the anon
+// key, so this is the one path that must use the authenticated browser client
+// (whose JWT satisfies the is_admin() policies).
 
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { MutationResult } from "@/lib/mutations";
@@ -27,8 +27,7 @@ interface PendingProfileRow {
 interface DocumentRow {
   user_id: string;
   nin: string | null;
-  nin_slip_path: string | null;
-  work_id_path: string | null;
+  id_photo_path: string | null;
   submitted_at: string | null;
 }
 
@@ -55,10 +54,10 @@ export async function getPendingApprovals(): Promise<PendingApproval[]> {
         .eq("approval_status", "pending")
         .order("last_active", { ascending: true })
         .returns<PendingProfileRow[]>(),
-      // RLS trims this to nothing for anyone who isn't a Super Admin.
+      // RLS trims this to nothing for anyone who isn't the Admin.
       supabase
         .from("identity_documents")
-        .select("user_id, nin, nin_slip_path, work_id_path, submitted_at")
+        .select("user_id, nin, id_photo_path, submitted_at")
         .returns<DocumentRow[]>(),
     ]);
   if (profilesError) throw new Error(profilesError.message);
@@ -71,29 +70,25 @@ export async function getPendingApprovals(): Promise<PendingApproval[]> {
         id: row.id,
         name: row.name ?? "",
         email: row.email ?? "",
-        role: (row.role ?? "Health Officer") as UserRole,
+        role: (row.role ?? "Member") as UserRole,
         state: row.state ?? "",
         phone: row.phone ?? undefined,
         active: row.active ?? true,
         approvalStatus: "pending",
         lastActive: row.last_active ?? "",
       };
-      const [ninSlipUrl, workIdUrl] = await Promise.all([
-        signedUrl(doc?.nin_slip_path ?? null),
-        signedUrl(doc?.work_id_path ?? null),
-      ]);
+      const idPhotoUrl = await signedUrl(doc?.id_photo_path ?? null);
       return {
         user,
         nin: doc?.nin ?? "",
-        ninSlipUrl,
-        workIdUrl,
+        idPhotoUrl,
         submittedAt: doc?.submitted_at ?? user.lastActive,
       };
     }),
   );
 }
 
-/** Approve or reject a pending registration (Super Admin only, enforced in the DB). */
+/** Approve or reject a pending registration (Admin only, enforced in the DB). */
 export async function reviewUser(
   id: string,
   decision: "approved" | "rejected",

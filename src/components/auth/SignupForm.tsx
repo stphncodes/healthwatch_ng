@@ -1,8 +1,9 @@
 // Module: Auth — Signup Form | Owner: Frontend Lead
-// Self-registration: name, role, state of origin, email, phone, NIN, identity
-// document photos and password. Registrations are held for Super Admin review;
-// in Supabase mode this calls supabase.auth.signUp (and shows a check-your-
-// email notice when confirmation is enabled) after uploading the documents.
+// Public self-registration: name, state of origin, email, phone, NIN, one
+// government ID photo and password. Every signup becomes a Member and is held
+// for Admin review; in Supabase mode this calls supabase.auth.signUp (and
+// shows a check-your-email notice when confirmation is enabled) after
+// uploading the document.
 "use client";
 
 import {
@@ -25,11 +26,9 @@ import {
 } from "lucide-react";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth";
 import { compressImage, type CompressedImage } from "@/lib/images";
-import { SELF_REGISTER_ROLES } from "@/lib/roles";
 import { NIGERIAN_STATES } from "@/lib/states";
 import { BRAND } from "@/lib/theme";
 import { cn } from "@/lib/utils";
-import type { UserRole } from "@/types/health";
 import { AuthScreen } from "./AuthScreen";
 import { useAuth } from "./AuthProvider";
 import { fieldClasses } from "./fieldStyles";
@@ -42,20 +41,17 @@ const NIN_PATTERN = /^\d{11}$/;
 
 interface FieldErrors {
   name?: string;
-  role?: string;
   state?: string;
   email?: string;
   phone?: string;
   nin?: string;
-  ninSlip?: string;
-  workId?: string;
+  idPhoto?: string;
   password?: string;
   confirmPassword?: string;
 }
 
 interface FormValues {
   name: string;
-  role: string;
   state: string;
   email: string;
   phone: string;
@@ -64,19 +60,15 @@ interface FormValues {
   confirmPassword: string;
 }
 
-type DocumentKey = "ninSlip" | "workId";
-
-type Documents = Record<DocumentKey, CompressedImage | null>;
-
-function validate(values: FormValues, documents: Documents): FieldErrors {
+function validate(
+  values: FormValues,
+  idPhoto: CompressedImage | null,
+): FieldErrors {
   const errors: FieldErrors = {};
   if (!values.name.trim()) {
     errors.name = "Full name is required.";
   } else if (values.name.trim().length < 3) {
     errors.name = "Enter your full name.";
-  }
-  if (!values.role) {
-    errors.role = "Select your role.";
   }
   if (!values.state) {
     errors.state = "Select your state of origin.";
@@ -99,11 +91,8 @@ function validate(values: FormValues, documents: Documents): FieldErrors {
   } else if (!NIN_PATTERN.test(nin)) {
     errors.nin = "Enter your 11-digit National Identification Number.";
   }
-  if (!documents.ninSlip) {
-    errors.ninSlip = "Upload a photo of your NIN slip.";
-  }
-  if (!documents.workId) {
-    errors.workId = "Upload a photo of a valid work ID card.";
+  if (!idPhoto) {
+    errors.idPhoto = "Upload a photo of a valid government ID.";
   }
   if (!values.password) {
     errors.password = "Password is required.";
@@ -124,7 +113,6 @@ export function SignupForm() {
 
   const [values, setValues] = useState<FormValues>({
     name: "",
-    role: "",
     state: "",
     email: "",
     phone: "",
@@ -132,11 +120,8 @@ export function SignupForm() {
     password: "",
     confirmPassword: "",
   });
-  const [documents, setDocuments] = useState<Documents>({
-    ninSlip: null,
-    workId: null,
-  });
-  const [processingDoc, setProcessingDoc] = useState<DocumentKey | null>(null);
+  const [idPhoto, setIdPhoto] = useState<CompressedImage | null>(null);
+  const [processingDoc, setProcessingDoc] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [authError, setAuthError] = useState<string | null>(null);
@@ -156,51 +141,46 @@ export function SignupForm() {
     setValues((prev) => ({ ...prev, [key]: value }));
   }
 
-  async function handleDocumentChange(
-    key: DocumentKey,
-    event: ChangeEvent<HTMLInputElement>,
-  ) {
+  async function handleDocumentChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     // Allow re-selecting the same file after a "Replace".
     event.target.value = "";
     if (!file) return;
-    setProcessingDoc(key);
-    setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
+    setProcessingDoc(true);
+    setFieldErrors((prev) => ({ ...prev, idPhoto: undefined }));
     try {
       const image = await compressImage(file);
-      setDocuments((prev) => ({ ...prev, [key]: image }));
+      setIdPhoto(image);
     } catch (err) {
-      setDocuments((prev) => ({ ...prev, [key]: null }));
+      setIdPhoto(null);
       setFieldErrors((prev) => ({
         ...prev,
-        [key]:
+        idPhoto:
           err instanceof Error
             ? err.message
             : "Could not read that image — choose a JPEG or PNG photo.",
       }));
     } finally {
-      setProcessingDoc(null);
+      setProcessingDoc(false);
     }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const errors = validate(values, documents);
+    const errors = validate(values, idPhoto);
     setFieldErrors(errors);
     if (Object.values(errors).some(Boolean)) return;
-    if (!documents.ninSlip || !documents.workId) return;
+    if (!idPhoto) return;
 
     setSubmitting(true);
     setAuthError(null);
     const result = await register({
       name: values.name,
-      role: values.role as UserRole,
       state: values.state,
       email: values.email,
       phone: values.phone,
       nin: values.nin.replace(/\s/g, ""),
-      ninSlip: documents.ninSlip,
-      workId: documents.workId,
+      idPhoto,
       password: values.password,
     });
     if (!result.ok) {
@@ -213,7 +193,7 @@ export function SignupForm() {
       setSuccessMode("confirm-email");
       setSubmitting(false);
     } else if (result.pendingApproval) {
-      // Account created but locked until a Super Admin approves it.
+      // Account created but locked until the Admin approves it.
       setSuccessMode("awaiting-approval");
       setSubmitting(false);
     }
@@ -254,8 +234,8 @@ export function SignupForm() {
               ) : (
                 <>
                   Your account is awaiting administrator approval. We&apos;ll
-                  verify your NIN and work ID — you&apos;ll be able to sign in
-                  once your registration has been reviewed.
+                  verify your NIN and ID document — you&apos;ll be able to sign
+                  in once your registration has been reviewed.
                 </>
               )}
             </p>
@@ -278,7 +258,8 @@ export function SignupForm() {
         Create an account
       </h1>
       <p className="mt-1 text-sm text-slate-500">
-        Register for access to the surveillance platform.
+        Anyone can register as a member — access is granted after NCDC reviews
+        your identity documents.
       </p>
 
       {authError && (
@@ -314,74 +295,35 @@ export function SignupForm() {
           )}
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div>
-            <label
-              htmlFor="role"
-              className="block text-sm font-medium text-slate-700"
-            >
-              Role
-            </label>
-            <select
-              id="role"
-              value={values.role}
-              onChange={(e) => setValue("role", e.target.value)}
-              aria-invalid={Boolean(fieldErrors.role)}
-              className={fieldClasses(
-                Boolean(fieldErrors.role),
-                values.role ? "" : "text-slate-400",
-              )}
-            >
-              <option value="" disabled>
-                Select your role
-              </option>
-              {SELF_REGISTER_ROLES.map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </select>
-            {fieldErrors.role ? (
-              <p className="mt-1.5 text-xs text-red-600">{fieldErrors.role}</p>
-            ) : (
-              <p className="mt-1.5 text-xs text-slate-400">
-                Admin accounts are provisioned by NCDC.
-              </p>
+        <div>
+          <label
+            htmlFor="state"
+            className="block text-sm font-medium text-slate-700"
+          >
+            State of origin
+          </label>
+          <select
+            id="state"
+            value={values.state}
+            onChange={(e) => setValue("state", e.target.value)}
+            aria-invalid={Boolean(fieldErrors.state)}
+            className={fieldClasses(
+              Boolean(fieldErrors.state),
+              values.state ? "" : "text-slate-400",
             )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="state"
-              className="block text-sm font-medium text-slate-700"
-            >
-              State of origin
-            </label>
-            <select
-              id="state"
-              value={values.state}
-              onChange={(e) => setValue("state", e.target.value)}
-              aria-invalid={Boolean(fieldErrors.state)}
-              className={fieldClasses(
-                Boolean(fieldErrors.state),
-                values.state ? "" : "text-slate-400",
-              )}
-            >
-              <option value="" disabled>
-                Select a state
+          >
+            <option value="" disabled>
+              Select a state
+            </option>
+            {NIGERIAN_STATES.map((state) => (
+              <option key={state.code} value={state.name}>
+                {state.name}
               </option>
-              {NIGERIAN_STATES.map((state) => (
-                <option key={state.code} value={state.name}>
-                  {state.name}
-                </option>
-              ))}
-            </select>
-            {fieldErrors.state && (
-              <p className="mt-1.5 text-xs text-red-600">
-                {fieldErrors.state}
-              </p>
-            )}
-          </div>
+            ))}
+          </select>
+          {fieldErrors.state && (
+            <p className="mt-1.5 text-xs text-red-600">{fieldErrors.state}</p>
+          )}
         </div>
 
         <div>
@@ -456,26 +398,15 @@ export function SignupForm() {
           )}
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <DocumentPicker
-            id="ninSlip"
-            label="NIN slip photo"
-            hint="Clear photo of your NIN slip."
-            image={documents.ninSlip}
-            processing={processingDoc === "ninSlip"}
-            error={fieldErrors.ninSlip}
-            onChange={(e) => handleDocumentChange("ninSlip", e)}
-          />
-          <DocumentPicker
-            id="workId"
-            label="Work ID card photo"
-            hint="Valid staff/official ID card."
-            image={documents.workId}
-            processing={processingDoc === "workId"}
-            error={fieldErrors.workId}
-            onChange={(e) => handleDocumentChange("workId", e)}
-          />
-        </div>
+        <DocumentPicker
+          id="idPhoto"
+          label="Government ID photo"
+          hint="NIN slip, national ID card, driver's licence, passport or voter's card."
+          image={idPhoto}
+          processing={processingDoc}
+          error={fieldErrors.idPhoto}
+          onChange={handleDocumentChange}
+        />
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
@@ -579,7 +510,7 @@ export function SignupForm() {
 }
 
 interface DocumentPickerProps {
-  id: DocumentKey;
+  id: string;
   label: string;
   hint: string;
   image: CompressedImage | null;
