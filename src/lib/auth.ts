@@ -272,6 +272,10 @@ async function supabaseRegister(
     email: input.email.trim(),
     password: input.password,
     options: {
+      // Send the confirmation link back to the origin the user signed up
+      // from (deployed URL or localhost) instead of the project's Site URL.
+      // The origin must be in the Supabase dashboard's Redirect URLs list.
+      emailRedirectTo: `${window.location.origin}/login`,
       data: {
         name: input.name.trim(),
         state: input.state,
