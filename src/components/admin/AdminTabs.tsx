@@ -1,34 +1,59 @@
-// Module: Admin Panel — Tab Switcher | Owner: System Admin / Platform Engineer
+// Module: Admin Panel — Tab Switcher | Owner: Platform Engineer
 "use client";
 
 import { useState } from "react";
-import { Database, ScrollText, Users, type LucideIcon } from "lucide-react";
+import {
+  Database,
+  Map,
+  ScrollText,
+  Siren,
+  UserCheck,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import type {
   AuditEntry,
   DataSource,
+  OutbreakAlert,
   PlatformUser,
+  StateRisk,
 } from "@/types/health";
 import { Card } from "@/components/ui/Card";
 import { UsersTab } from "./UsersTab";
 import { DataSourcesTab } from "./DataSourcesTab";
 import { AuditLogTab } from "./AuditLogTab";
+import { PendingApprovalsTab } from "./PendingApprovalsTab";
+import { AlertsAdminTab } from "./AlertsAdminTab";
+import { StateRisksAdminTab } from "./StateRisksAdminTab";
 
-type TabId = "users" | "sources" | "audit";
+type TabId = "approvals" | "users" | "alerts" | "risks" | "sources" | "audit";
 
+// Everyone past the AdminConsole gate is THE admin — every tab is visible.
 const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
+  { id: "approvals", label: "Pending Approvals", icon: UserCheck },
   { id: "users", label: "Users", icon: Users },
+  { id: "alerts", label: "Alerts", icon: Siren },
+  { id: "risks", label: "State Risks", icon: Map },
   { id: "sources", label: "Data Sources", icon: Database },
   { id: "audit", label: "Audit Log", icon: ScrollText },
 ];
 
 interface AdminTabsProps {
   users: PlatformUser[];
+  alerts: OutbreakAlert[];
+  risks: StateRisk[];
   sources: DataSource[];
   auditLog: AuditEntry[];
 }
 
-export function AdminTabs({ users, sources, auditLog }: AdminTabsProps) {
-  const [active, setActive] = useState<TabId>("users");
+export function AdminTabs({
+  users,
+  alerts,
+  risks,
+  sources,
+  auditLog,
+}: AdminTabsProps) {
+  const [active, setActive] = useState<TabId>("approvals");
 
   return (
     <div className="space-y-5">
@@ -55,9 +80,25 @@ export function AdminTabs({ users, sources, auditLog }: AdminTabsProps) {
         })}
       </div>
 
+      {active === "approvals" && (
+        <Card>
+          <PendingApprovalsTab />
+        </Card>
+      )}
       {active === "users" && (
         <Card>
-          <UsersTab users={users} />
+          {/* Pending users live in the approvals queue, not the users table. */}
+          <UsersTab users={users.filter((u) => u.approvalStatus !== "pending")} />
+        </Card>
+      )}
+      {active === "alerts" && (
+        <Card>
+          <AlertsAdminTab alerts={alerts} />
+        </Card>
+      )}
+      {active === "risks" && (
+        <Card>
+          <StateRisksAdminTab risks={risks} />
         </Card>
       )}
       {active === "sources" && <DataSourcesTab sources={sources} />}

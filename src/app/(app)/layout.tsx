@@ -1,6 +1,7 @@
 // Module: Dashboard Route-Group Layout | Owner: Frontend Lead
-// Wraps every authenticated dashboard page (/dashboard, /alerts, /admin,
-// /portal) in the auth guard and the shared sidebar + top navbar shell.
+// Wraps every authenticated dashboard page (/dashboard, /alerts, /portal)
+// in the auth guard and the shared sidebar + top navbar shell. The Admin
+// Console (/admin) lives outside this group with its own sign-in.
 import type { ReactNode } from "react";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { AppShell } from "@/components/layout/AppShell";

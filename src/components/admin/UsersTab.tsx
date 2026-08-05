@@ -1,25 +1,13 @@
-// Module: Admin Panel — Users Tab | Owner: System Admin / Platform Engineer
+// Module: Admin Panel — Users Tab | Owner: Platform Engineer
 "use client";
 
 import { useState } from "react";
 import { Users } from "lucide-react";
 import type { PlatformUser } from "@/types/health";
 import { setUserActive } from "@/lib/mutations";
-import { ROLE_STYLES } from "@/lib/theme";
 import { timeAgo } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
-
-function RoleBadge({ role }: { role: PlatformUser["role"] }) {
-  const s = ROLE_STYLES[role];
-  return (
-    <span
-      className="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap"
-      style={{ backgroundColor: s.bg, color: s.fg }}
-    >
-      {role}
-    </span>
-  );
-}
+import { RoleBadge } from "./RoleBadge";
 
 function Toggle({
   on,

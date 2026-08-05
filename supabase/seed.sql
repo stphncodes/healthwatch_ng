@@ -53,6 +53,7 @@ insert into public.state_risks (id, name, code, risk, active_cases, dominant_dis
 on conflict (id) do nothing;
 
 insert into public.outbreak_alerts (id, disease, lga, state, risk, case_count, triggered_at, status, description, reported_by, contacts_traced, fatalities, detection_time_hrs) values
+<<<<<<< HEAD
   ('AL-2026-0140', 'Cholera', 'Maiduguri', 'Borno', 'Critical', 511, '2026-07-31T05:29:23.067Z', 'Investigating', 'Cholera cluster detected in Maiduguri LGA, Borno. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Ngozi Umeh', 361, 11, 50.9),
   ('AL-2026-0141', 'Cholera', 'Bade', 'Yobe', 'High', 342, '2026-07-25T12:29:23.067Z', 'Acknowledged', 'Cholera cluster detected in Bade LGA, Yobe. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Fatima Sani', 230, 16, 17.3),
   ('AL-2026-0142', 'Lassa Fever', 'Owo', 'Ondo', 'High', 88, '2026-07-17T17:29:23.067Z', 'Resolved', 'Lassa Fever cluster detected in Owo LGA, Ondo. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Fatima Sani', 130, 2, 42.5),
@@ -68,6 +69,23 @@ insert into public.outbreak_alerts (id, disease, lga, state, risk, case_count, t
   ('AL-2026-0152', 'Monkeypox', 'Ikom', 'Cross River', 'Low', 12, '2026-07-30T05:29:23.067Z', 'Resolved', 'Monkeypox cluster detected in Ikom LGA, Cross River. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Tunde Okon', 9, 0, 31.4),
   ('AL-2026-0153', 'Cholera', 'Damaturu', 'Yobe', 'High', 189, '2026-07-28T06:29:23.067Z', 'Acknowledged', 'Cholera cluster detected in Damaturu LGA, Yobe. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Amina Bello', 208, 9, 69.3),
   ('AL-2026-0154', 'Lassa Fever', 'Ose', 'Ondo', 'Medium', 41, '2026-07-18T12:29:23.067Z', 'Resolved', 'Lassa Fever cluster detected in Ose LGA, Ondo. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Fatima Sani', 31, 2, 45.6)
+=======
+  ('AL-2026-0140', 'Cholera', 'Maiduguri', 'Borno', 'Critical', 511, '2026-07-25T01:51:05.622Z', 'Investigating', 'Cholera cluster detected in Maiduguri LGA, Borno. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Ngozi Umeh', 361, 11, 50.9),
+  ('AL-2026-0141', 'Cholera', 'Bade', 'Yobe', 'High', 342, '2026-07-19T08:51:05.622Z', 'Acknowledged', 'Cholera cluster detected in Bade LGA, Yobe. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Fatima Sani', 230, 16, 17.3),
+  ('AL-2026-0142', 'Lassa Fever', 'Owo', 'Ondo', 'High', 88, '2026-07-11T13:51:05.622Z', 'Resolved', 'Lassa Fever cluster detected in Owo LGA, Ondo. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Fatima Sani', 130, 2, 42.5),
+  ('AL-2026-0143', 'Lassa Fever', 'Etsako West', 'Edo', 'Critical', 132, '2026-07-24T08:51:05.622Z', 'Resolved', 'Lassa Fever cluster detected in Etsako West LGA, Edo. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Chukwu Eze', 96, 5, 61.1),
+  ('AL-2026-0144', 'Cerebrospinal Meningitis', 'Gusau', 'Zamfara', 'Critical', 203, '2026-07-19T19:51:05.622Z', 'Investigating', 'Cerebrospinal Meningitis cluster detected in Gusau LGA, Zamfara. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Amina Bello', 189, 8, 38.6),
+  ('AL-2026-0145', 'Cerebrospinal Meningitis', 'Sabon Gari', 'Kaduna', 'High', 156, '2026-07-11T16:51:05.622Z', 'Resolved', 'Cerebrospinal Meningitis cluster detected in Sabon Gari LGA, Kaduna. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Fatima Sani', 233, 2, 7.2),
+  ('AL-2026-0146', 'Cholera', 'Ajingi', 'Kano', 'Medium', 97, '2026-07-27T06:51:05.622Z', 'Investigating', 'Cholera cluster detected in Ajingi LGA, Kano. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Amina Bello', 78, 3, 17.6),
+  ('AL-2026-0147', 'Monkeypox', 'Eket', 'Akwa Ibom', 'Medium', 23, '2026-07-18T20:51:05.622Z', 'Resolved', 'Monkeypox cluster detected in Eket LGA, Akwa Ibom. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Ngozi Umeh', 26, 1, 22.6),
+  ('AL-2026-0148', 'Cholera', 'Shomolu', 'Lagos', 'Medium', 64, '2026-07-12T16:51:05.622Z', 'Resolved', 'Cholera cluster detected in Shomolu LGA, Lagos. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Fatima Sani', 94, 2, 19.5),
+  ('AL-2026-0149', 'Malaria', 'Jos North', 'Plateau', 'Medium', 418, '2026-07-29T00:51:05.622Z', 'Investigating', 'Malaria cluster detected in Jos North LGA, Plateau. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Tunde Okon', 611, 13, 62.4),
+  ('AL-2026-0150', 'Cholera', 'Bama', 'Borno', 'High', 276, '2026-07-16T20:51:05.622Z', 'Acknowledged', 'Cholera cluster detected in Bama LGA, Borno. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Chukwu Eze', 301, 3, 60.7),
+  ('AL-2026-0151', 'Lassa Fever', 'Jalingo', 'Taraba', 'Medium', 37, '2026-07-10T16:51:05.622Z', 'Investigating', 'Lassa Fever cluster detected in Jalingo LGA, Taraba. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Amina Bello', 39, 1, 6.5),
+  ('AL-2026-0152', 'Monkeypox', 'Ikom', 'Cross River', 'Low', 12, '2026-07-24T01:51:05.622Z', 'Resolved', 'Monkeypox cluster detected in Ikom LGA, Cross River. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Tunde Okon', 9, 0, 31.4),
+  ('AL-2026-0153', 'Cholera', 'Damaturu', 'Yobe', 'High', 189, '2026-07-22T02:51:05.622Z', 'Acknowledged', 'Cholera cluster detected in Damaturu LGA, Yobe. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Amina Bello', 208, 9, 69.3),
+  ('AL-2026-0154', 'Lassa Fever', 'Ose', 'Ondo', 'Medium', 41, '2026-07-12T08:51:05.622Z', 'Resolved', 'Lassa Fever cluster detected in Ose LGA, Ondo. Case-based surveillance triggered a signal above the epidemic threshold.', 'Dr. Fatima Sani', 31, 2, 45.6)
+>>>>>>> 3fa6c238cde8e590af1d59fcc283e0a5593349c7
 on conflict (id) do nothing;
 
 insert into public.weekly_case_trends (week, cholera, lassa_fever, meningitis) values
@@ -86,6 +104,7 @@ insert into public.weekly_case_trends (week, cholera, lassa_fever, meningitis) v
 on conflict (week) do nothing;
 
 insert into public.data_sources (id, name, description, status, last_sync, record_count) values
+<<<<<<< HEAD
   ('DS-WHO', 'WHO Global Cholera & AWD (HDX)', 'WHO Global Cholera & AWD dashboard (HDX) · Nigeria 50,290 cases / 338 deaths (2025-12-29 → 2026-07-20).', 'Connected', '2026-08-04T19:29:23.067Z', 27),
   ('DS-IDSR', 'IDSR Weekly Reports (NCDC)', 'NCDC Integrated Disease Surveillance & Response — PDF only, not yet parsed.', 'Degraded', '2026-08-03T17:29:23.067Z', 0),
   ('DS-DHIS2', 'DHIS2 National Instance', 'Federal DHIS2 aggregate feed — connector not configured.', 'Offline', '2026-07-26T19:29:23.067Z', 0)
@@ -99,6 +118,21 @@ insert into public.audit_log (id, user_name, action, resource, timestamp, catego
   ('EV-30005', 'System Admin', 'Updated risk threshold config', 'config/thresholds', '2026-08-03T13:29:23.067Z', 'Config'),
   ('EV-30006', 'Dr. Fatima Sani', 'Signed in', 'auth/session', '2026-08-02T19:29:23.067Z', 'Auth'),
   ('EV-30007', 'ingest-pipeline', 'Refreshed state risk grid', 'state_risks', '2026-08-03T17:29:23.067Z', 'Data')
+=======
+  ('DS-WHO', 'WHO Global Cholera & AWD (HDX)', 'WHO Global Cholera & AWD dashboard (HDX) · Nigeria 11,723 cases / 117 deaths (2025-12-29 → 2026-06-08).', 'Connected', '2026-07-29T15:51:05.622Z', 24),
+  ('DS-IDSR', 'IDSR Weekly Reports (NCDC)', 'NCDC Integrated Disease Surveillance & Response — PDF only, not yet parsed.', 'Degraded', '2026-07-28T13:51:05.622Z', 0),
+  ('DS-DHIS2', 'DHIS2 National Instance', 'Federal DHIS2 aggregate feed — connector not configured.', 'Offline', '2026-07-20T15:51:05.622Z', 0)
+on conflict (id) do nothing;
+
+insert into public.audit_log (id, user_name, action, resource, timestamp, category) values
+  ('EV-30001', 'ingest-pipeline', 'Ingested WHO cholera snapshot — Nigeria 11,723 cases, ranked #3 of 24 countries', 'epi_reports, weekly_case_trends, forecast_points', '2026-07-29T15:51:05.622Z', 'Data'),
+  ('EV-30002', 'Dr. Amina Bello', 'Signed in', 'auth/session', '2026-07-29T12:51:05.622Z', 'Auth'),
+  ('EV-30003', 'Dr. Tunde Okon', 'Acknowledged alert AL-2026-0141', 'outbreak_alerts', '2026-07-29T06:51:05.622Z', 'Alert'),
+  ('EV-30004', 'Dr. Ngozi Umeh', 'Exported weekly bulletin (PDF)', 'epi_reports', '2026-07-28T19:51:05.622Z', 'Export'),
+  ('EV-30005', 'Admin', 'Updated risk threshold config', 'config/thresholds', '2026-07-28T09:51:05.622Z', 'Config'),
+  ('EV-30006', 'Dr. Fatima Sani', 'Signed in', 'auth/session', '2026-07-27T15:51:05.622Z', 'Auth'),
+  ('EV-30007', 'ingest-pipeline', 'Refreshed state risk grid', 'state_risks', '2026-07-28T13:51:05.622Z', 'Data')
+>>>>>>> 3fa6c238cde8e590af1d59fcc283e0a5593349c7
 on conflict (id) do nothing;
 
 insert into public.forecast_points (week, actual, predicted, lower, upper) values
@@ -129,43 +163,17 @@ insert into public.high_risk_lgas (id, lga, state, disease, predicted_cases, tre
 on conflict (id) do nothing;
 
 insert into public.epi_reports (epi_week, period_label, total_cases_reported, new_outbreaks, under_investigation, states_reporting, recovery_rate, case_fatality_rate) values
+<<<<<<< HEAD
   ('Epi Week 31', 'Week 31, 2026 · cumulative', 50290, 5, 5, 37, 93.3, 0.7),
   ('Epi Week 30', 'Week 30, 2026 · cumulative', 47273, 5, 5, 37, 93.3, 0.7)
+=======
+  ('Epi Week 30', 'Week 30, 2026 · cumulative', 11723, 5, 5, 37, 93, 1),
+  ('Epi Week 29', 'Week 29, 2026 · cumulative', 11020, 5, 5, 37, 93, 1)
+>>>>>>> 3fa6c238cde8e590af1d59fcc283e0a5593349c7
 on conflict (epi_week) do nothing;
 
 -- ---------------------------------------------------------------------------
--- OPTIONAL demo accounts (so the Admin → Users tab isn't empty).
--- profiles.id is a FK to auth.users, so profiles can't be seeded directly;
--- instead we insert auth.users and let the handle_new_user() trigger create
--- the matching profiles rows from raw_user_meta_data.
--- Each account's password is 'HealthWatch#2026'.
--- This block is version-sensitive (GoTrue internals). If it errors on your
--- Supabase version, DELETE it and just self-register on the signup page —
--- everything above this line seeds fine on its own.
+-- No accounts are seeded here. Create the single Admin account by running
+-- supabase/seed_admin.sql in the SQL editor — the admin is provisioned by
+-- SQL only, never through the UI.
 -- ---------------------------------------------------------------------------
-insert into auth.users
-  (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
-   raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
-   confirmation_token, recovery_token, email_change_token_new, email_change)
-values
-  ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated',
-   'amina.bello@ncdc.demo', crypt('HealthWatch#2026', gen_salt('bf')), now(),
-   '{"provider":"email","providers":["email"]}',
-   '{"name":"Dr. Amina Bello","role":"State Coordinator","state":"Borno","phone":"08030000001"}',
-   now(), now(), '', '', '', ''),
-  ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated',
-   'tunde.okon@ncdc.demo', crypt('HealthWatch#2026', gen_salt('bf')), now(),
-   '{"provider":"email","providers":["email"]}',
-   '{"name":"Dr. Tunde Okon","role":"Health Officer","state":"Lagos","phone":"08030000002"}',
-   now(), now(), '', '', '', ''),
-  ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated',
-   'fatima.sani@ncdc.demo', crypt('HealthWatch#2026', gen_salt('bf')), now(),
-   '{"provider":"email","providers":["email"]}',
-   '{"name":"Dr. Fatima Sani","role":"Data Scientist","state":"Kano","phone":"08030000003"}',
-   now(), now(), '', '', '', ''),
-  ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated',
-   'admin@ncdc.demo', crypt('HealthWatch#2026', gen_salt('bf')), now(),
-   '{"provider":"email","providers":["email"]}',
-   '{"name":"System Admin","role":"System Admin","state":"FCT","phone":"08030000004"}',
-   now(), now(), '', '', '', '')
-on conflict (id) do nothing;

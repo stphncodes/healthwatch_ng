@@ -9,6 +9,7 @@
 
 import { config } from "dotenv";
 import { fetchCholeraSnapshot } from "./ingest/sources/whoCholera";
+import { baselineSnapshot } from "./ingest/baseline";
 import { buildDataset } from "./ingest/transform";
 import { writeSeedSql } from "./ingest/seedWriter";
 import { loadDataset } from "./ingest/load";
@@ -17,22 +18,6 @@ import type { CholeraSnapshot, Dataset, Provenance } from "./ingest/types";
 // Load .env.local first (Next's convention), then .env as a fallback.
 config({ path: ".env.local" });
 config();
-
-// Offline baseline (illustrative — NOT real). Only used when the WHO fetch
-// fails, so `npm run ingest` still produces a populated dataset with no
-// network. Shaped after a plausible Nigerian cholera epi-year.
-function baselineSnapshot(): CholeraSnapshot {
-  return {
-    caseTotal: 10500,
-    deathTotal: 105,
-    firstEpiWeek: "2025-12-29",
-    lastEpiWeek: "2026-06-08",
-    regional: [],
-    source: "offline baseline (illustrative)",
-    live: false,
-    recordCount: 0,
-  };
-}
 
 async function resolveSnapshot(): Promise<CholeraSnapshot> {
   try {

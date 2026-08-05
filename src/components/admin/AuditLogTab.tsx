@@ -1,4 +1,4 @@
-// Module: Admin Panel — Audit Log Tab | Owner: System Admin / Compliance
+// Module: Admin Panel — Audit Log Tab | Owner: Compliance
 "use client";
 
 import { ScrollText } from "lucide-react";

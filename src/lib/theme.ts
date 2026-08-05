@@ -5,6 +5,7 @@
 
 import type {
   AlertStatus,
+  ApprovalStatus,
   Disease,
   RiskLevel,
   SourceStatus,
@@ -56,11 +57,15 @@ export const SOURCE_STATUS_STYLES: Record<SourceStatus, SwatchStyle> = {
 
 /** Role badge palette for the admin user table. */
 export const ROLE_STYLES: Record<UserRole, SwatchStyle> = {
-  "System Admin": { solid: "#7C3AED", bg: "#F5F3FF", fg: "#6D28D9" },
-  "Data Engineer": { solid: "#2563EB", bg: "#EFF6FF", fg: "#1D4ED8" },
-  "Data Scientist": { solid: "#0D9488", bg: "#F0FDFA", fg: "#0F766E" },
-  "Health Officer": { solid: "#D97706", bg: "#FFFBEB", fg: "#B45309" },
-  "State Coordinator": { solid: "#475569", bg: "#F1F5F9", fg: "#334155" },
+  Admin: { solid: "#BE123C", bg: "#FFF1F2", fg: "#9F1239" },
+  Member: { solid: "#2563EB", bg: "#EFF6FF", fg: "#1D4ED8" },
+};
+
+/** Registration approval status palette. */
+export const APPROVAL_STYLES: Record<ApprovalStatus, SwatchStyle> = {
+  pending: { solid: "#D97706", bg: "#FFFBEB", fg: "#B45309" },
+  approved: { solid: "#059669", bg: "#ECFDF5", fg: "#047857" },
+  rejected: { solid: "#DC2626", bg: "#FEF2F2", fg: "#B91C1C" },
 };
 
 /** Stroke colours for each disease series on the trend chart. */

@@ -15,13 +15,12 @@ export type Disease =
 /** Lifecycle state of an outbreak alert as it moves through triage. */
 export type AlertStatus = "Active" | "Investigating" | "Acknowledged" | "Resolved";
 
-/** Operational role of a platform user. */
-export type UserRole =
-  | "System Admin"
-  | "Data Engineer"
-  | "Data Scientist"
-  | "Health Officer"
-  | "State Coordinator";
+/** Operational role of a platform user. The single Admin is seeded by SQL
+ * (supabase/seed_admin.sql); everyone who self-registers is a Member. */
+export type UserRole = "Admin" | "Member";
+
+/** Review state of a self-registered account; only "approved" users may sign in. */
+export type ApprovalStatus = "pending" | "approved" | "rejected";
 
 /** Connection health of an upstream data source integration. */
 export type SourceStatus = "Connected" | "Degraded" | "Offline";
@@ -77,8 +76,21 @@ export interface PlatformUser {
   /** Nigerian phone number; captured at self-registration only. */
   phone?: string;
   active: boolean;
+  /** Accounts created before the approval flow map to "approved". */
+  approvalStatus: ApprovalStatus;
   /** ISO-8601 timestamp of the user's most recent activity. */
   lastActive: string;
+}
+
+/** A pending registration awaiting Admin review, with identity evidence. */
+export interface PendingApproval {
+  user: PlatformUser;
+  /** Typed 11-digit National Identification Number, for cross-checking the ID. */
+  nin: string;
+  /** Government ID photo URL (signed URL in Supabase mode; data URL in local mode). */
+  idPhotoUrl: string;
+  /** ISO-8601 timestamp the registration was submitted. */
+  submittedAt: string;
 }
 
 /** An upstream integration feeding surveillance data into the platform. */
